@@ -171,7 +171,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .hero-meta { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--muted); margin-bottom: 14px; flex-wrap: wrap; }
 .hero-meta .score { color: #f5c518; font-weight: 700; }
 .type-badge { color: var(--accent); font-weight: 600; }
-.hero-desc { font-size: 0.93rem; line-height: 1.65; color: #ccc; margin-bottom: 20px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.hero-desc { font-size: 0.93rem; line-height: 1.65; color: #ccc; margin-bottom: 20px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .hero-genres { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 26px; }
 .genre-tag { background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.14); padding: 4px 12px; border-radius: 20px; font-size: 0.76rem; color: var(--muted); }
 .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -193,7 +193,8 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
 
 /* ── ROW ── */
-.row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; }
+.row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; user-select: none; cursor: grab; }
+.row.dragging { cursor: grabbing; scroll-snap-type: none; }
 .row::-webkit-scrollbar { height: 3px; }
 
 /* ── CARD ── */

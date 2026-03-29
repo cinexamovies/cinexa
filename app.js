@@ -163,9 +163,11 @@ function renderGrid(container, items, append = false) {
 
 /* ── PLAYER ── */
 const SOURCES = [
-  { label: 'Server 1', movie: id => `https://vidsrc.xyz/embed/movie/${id}`,   show: (id,s,e) => `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}` },
-  { label: 'Server 2', movie: id => `https://vidsrc.to/embed/movie/${id}`,     show: (id,s,e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
-  { label: 'Server 3', movie: id => `https://embed.su/embed/movie/${id}`,      show: (id,s,e) => `https://embed.su/embed/tv/${id}/${s}/${e}` },
+  { label: 'Server 1', movie: id => `https://vidsrc.cc/embed/movie?tmdb=${id}`,      show: (id,s,e) => `https://vidsrc.cc/embed/tv?tmdb=${id}&season=${s}&episode=${e}` },
+  { label: 'Server 2', movie: id => `https://vidsrc.icu/embed/movie/${id}`,           show: (id,s,e) => `https://vidsrc.icu/embed/tv/${id}/${s}/${e}` },
+  { label: 'Server 3', movie: id => `https://vidsrc.xyz/embed/movie/${id}`,           show: (id,s,e) => `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}` },
+  { label: 'Server 4', movie: id => `https://vidsrc.to/embed/movie/${id}`,            show: (id,s,e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
+  { label: 'Server 5', movie: id => `https://embed.su/embed/movie/${id}`,             show: (id,s,e) => `https://embed.su/embed/tv/${id}/${s}/${e}` },
 ];
 
 let currentItem      = null;
@@ -978,5 +980,21 @@ bottomNav.querySelectorAll('.bottom-nav-item').forEach(btn => {
 
 // Save progress when tab is closed/refreshed
 window.addEventListener('beforeunload', () => { if (currentItem) saveProgress(); });
+
+/* ── DRAG SCROLL ROWS ── */
+document.querySelectorAll('.row').forEach(row => {
+  let isDown = false, startX, scrollLeft;
+  row.addEventListener('mousedown', e => {
+    isDown = true; row.classList.add('dragging');
+    startX = e.pageX - row.offsetLeft; scrollLeft = row.scrollLeft;
+  });
+  row.addEventListener('mouseleave', () => { isDown = false; row.classList.remove('dragging'); });
+  row.addEventListener('mouseup', () => { isDown = false; row.classList.remove('dragging'); });
+  row.addEventListener('mousemove', e => {
+    if (!isDown) return;
+    e.preventDefault();
+    row.scrollLeft = scrollLeft - (e.pageX - row.offsetLeft - startX);
+  });
+});
 
 init();
