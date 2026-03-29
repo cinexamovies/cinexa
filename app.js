@@ -979,15 +979,4 @@ bottomNav.querySelectorAll('.bottom-nav-item').forEach(btn => {
 // Save progress when tab is closed/refreshed
 window.addEventListener('beforeunload', () => { if (currentItem) saveProgress(); });
 
-/* ── BLOCK POPUP / REDIRECT ADS ── */
-// Override window.open so ad scripts can't spawn popups
-window.open = () => null;
-
-// Block any attempt by an iframe to navigate the top page
-window.addEventListener('blur', () => {
-  if (!playerOverlay.classList.contains('hidden')) {
-    setTimeout(() => window.focus(), 0);
-  }
-});
-
 init();
