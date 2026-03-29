@@ -163,10 +163,9 @@ function renderGrid(container, items, append = false) {
 
 /* ── PLAYER ── */
 const SOURCES = [
-  { label: 'Server 1', movie: id => `https://vidsrc.xyz/embed/movie/${id}`,       show: (id,s,e) => `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}` },
-  { label: 'Server 2', movie: id => `https://vidsrc.to/embed/movie/${id}`,         show: (id,s,e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
-  { label: 'Server 3', movie: id => `https://www.2embed.cc/embed/${id}`,            show: (id,s,e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}` },
-  { label: 'Server 4', movie: id => `https://moviesapi.club/movie/${id}`,           show: (id,s,e) => `https://moviesapi.club/tv/${id}-${s}-${e}` },
+  { label: 'Server 1', movie: id => `https://vidsrc.xyz/embed/movie/${id}`,   show: (id,s,e) => `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}` },
+  { label: 'Server 2', movie: id => `https://vidsrc.to/embed/movie/${id}`,     show: (id,s,e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
+  { label: 'Server 3', movie: id => `https://embed.su/embed/movie/${id}`,      show: (id,s,e) => `https://embed.su/embed/tv/${id}/${s}/${e}` },
 ];
 
 let currentItem      = null;
