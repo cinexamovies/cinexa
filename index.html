@@ -57,7 +57,9 @@
     <div class="nav-right">
       <div class="search-wrap">
         <input type="text" id="searchInput" placeholder="Search movies, shows..." autocomplete="off" />
-        <span class="search-icon">&#9906;</span>
+        <span class="search-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
         <div class="search-suggestions hidden" id="searchSuggestions"></div>
       </div>
     <button class="hamburger" id="hamburger" aria-label="Menu">&#9776;</button>
@@ -141,13 +143,17 @@
         <span id="playerTitle"></span>
         <div class="player-controls">
           <div class="src-btns" id="srcBtns"></div>
-          <button class="player-btn" id="playerFullscreen" title="Fullscreen">&#x26F6;</button>
+          <button class="player-btn" id="playerFullscreen" title="Fullscreen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          </button>
           <button class="player-btn player-close" id="playerClose" title="Close">&times;</button>
         </div>
       </div>
       <div class="player-wrap">
         <iframe id="playerFrame" allowfullscreen allow="autoplay; fullscreen; encrypted-media"
-          referrerpolicy="no-referrer" src=""></iframe>
+          referrerpolicy="no-referrer"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+          src=""></iframe>
         <div class="episode-picker hidden" id="episodePicker">
           <label>Season
             <select id="seasonSelect"></select>

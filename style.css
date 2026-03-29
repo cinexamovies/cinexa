@@ -48,7 +48,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 }
 .search-wrap input:focus { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.3); width: 260px; }
 .search-wrap input::placeholder { color: var(--muted); }
-.search-icon { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.search-icon { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; display: flex; align-items: center; }
 
 .avatar {
   width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.85rem;
@@ -219,7 +219,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 
 .play-btn {
   width: 36px; height: 36px; border-radius: 50%; background: var(--accent); border: none;
-  color: #fff; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: transform 0.2s;
 }
 .play-btn:hover { transform: scale(1.12); }
@@ -450,14 +450,25 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
   .navbar { padding: 0 3%; }
   .logo { font-size: 1.2rem; letter-spacing: 1px; }
   .nav-right { gap: 6px; }
-  .search-wrap input {
-    width: 0; padding: 7px 0; border-color: transparent;
-    background: transparent; cursor: pointer;
+  .search-wrap {
+    position: relative;
   }
-  .search-wrap input:focus {
-    width: 140px; padding: 7px 32px 7px 12px;
+  .search-wrap input {
+    width: 44px; height: 44px; padding: 0 0 0 44px;
+    border-color: transparent; background: transparent;
+    cursor: pointer; color: transparent; caret-color: var(--text);
+  }
+  .search-wrap input:focus, .search-wrap input:not(:placeholder-shown) {
+    width: 160px; height: 44px; padding: 0 36px 0 14px;
     background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25);
-    cursor: text;
+    cursor: text; color: var(--text);
+  }
+  .search-icon {
+    right: auto; left: 12px; pointer-events: auto; cursor: pointer;
+  }
+  .search-wrap input:focus ~ .search-icon,
+  .search-wrap input:not(:placeholder-shown) ~ .search-icon {
+    left: auto; right: 11px;
   }
   .search-suggestions { width: calc(100vw - 24px); right: 0; left: auto; }
 

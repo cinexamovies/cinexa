@@ -91,7 +91,10 @@ function renderHero(item) {
   if (!item) return;
   heroBg.style.backgroundImage = `url('${item.banner}')`;
   heroContent.innerHTML = `
-    <div class="hero-badge">&#9654; Now Streaming</div>
+    <div class="hero-badge">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Now Streaming
+    </div>
     <h1 class="hero-title">${item.title}</h1>
     <div class="hero-meta">
       <span class="score">&#9733; ${item.score}</span>
@@ -103,8 +106,14 @@ function renderHero(item) {
       ${item.genre.slice(0,4).map(g => `<span class="genre-tag">${g}</span>`).join('')}
     </div>
     <div class="hero-actions">
-      <button class="btn btn-primary" onclick="playContent('${item.id}')">&#9654; Watch Now</button>
-      <button class="btn btn-secondary" onclick="openModal('${item.id}')">&#9432; More Info</button>
+      <button class="btn btn-primary" onclick="playContent('${item.id}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Watch Now
+      </button>
+      <button class="btn btn-secondary" onclick="openModal('${item.id}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
+        More Info
+      </button>
     </div>
   `;
 }
@@ -119,7 +128,9 @@ function createCard(item) {
     <img src="${thumb}" alt="${item.title}" loading="lazy"
          onerror="this.src='https://placehold.co/342x513/13131a/888?text=No+Image'" />
     <div class="card-overlay">
-      <button class="play-btn" aria-label="Play">&#9654;</button>
+      <button class="play-btn" aria-label="Play">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </button>
       <button class="wl-mini ${inWL ? 'in-wl' : ''}" aria-label="Watchlist">${inWL ? '&#10003;' : '+'}</button>
     </div>
     <div class="card-info">
@@ -325,7 +336,9 @@ function createContinueCard(item) {
          onerror="this.src='https://placehold.co/342x513/13131a/888?text=No+Image'" />
     <div class="continue-badge">${label}</div>
     <div class="card-overlay">
-      <button class="play-btn" aria-label="Resume">&#9654;</button>
+      <button class="play-btn" aria-label="Resume">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </button>
       <button class="remove-continue" aria-label="Remove" title="Remove from continue watching">&times;</button>
     </div>
     <div class="card-info">
@@ -391,8 +404,14 @@ async function openModal(id) {
       ${item.genre.map(g => `<span class="genre-tag">${g}</span>`).join('')}
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closeModal();playContent('${item.id}')">&#9654; Watch Now</button>
-      ${item.trailerKey ? `<button class="btn btn-secondary" onclick="openTrailer('${item.trailerKey}')">&#9654; Trailer</button>` : ''}
+      <button class="btn btn-primary" onclick="closeModal();playContent('${item.id}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Watch Now
+      </button>
+      ${item.trailerKey ? `<button class="btn btn-secondary" onclick="openTrailer('${item.trailerKey}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Trailer
+      </button>` : ''}
       <button class="btn btn-secondary" id="modalWlBtn" onclick="toggleWatchlist('${item.id}', this)">
         ${inWL ? '&#10003; In Watchlist' : '+ Watchlist'}
       </button>
@@ -889,6 +908,9 @@ searchInput.addEventListener('keydown', e => {
 });
 searchInput.addEventListener('blur', () => setTimeout(hideSuggestions, 150));
 searchInput.addEventListener('focus', e => { if (e.target.value.trim()) showSuggestions(e.target.value.trim()); });
+
+// Make search icon tap-to-focus on mobile
+document.querySelector('.search-icon').addEventListener('click', () => searchInput.focus());
 
 document.querySelectorAll('.filter-pill').forEach(pill => {
   pill.addEventListener('click', () => {
