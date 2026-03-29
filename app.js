@@ -416,7 +416,7 @@ async function openModal(id) {
       </button>
     </div>
     <a class="tmdb-link" href="https://www.themoviedb.org/${item.type === 'show' ? 'tv' : 'movie'}/${item.tmdbId}"
-       target="_blank" rel="noopener">View on TMDB &#8599;</a>
+       target="_blank" rel="noopener">View on TMDB</a>
   `;
 }
 
@@ -978,5 +978,16 @@ bottomNav.querySelectorAll('.bottom-nav-item').forEach(btn => {
 
 // Save progress when tab is closed/refreshed
 window.addEventListener('beforeunload', () => { if (currentItem) saveProgress(); });
+
+/* ── BLOCK POPUP / REDIRECT ADS ── */
+// Override window.open so ad scripts can't spawn popups
+window.open = () => null;
+
+// Block any attempt by an iframe to navigate the top page
+window.addEventListener('blur', () => {
+  if (!playerOverlay.classList.contains('hidden')) {
+    setTimeout(() => window.focus(), 0);
+  }
+});
 
 init();
