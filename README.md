@@ -1,4 +1,4 @@
-# CINEXA
+# CINEXA (or awu & chill)
 
 A Netflix/MyFlixer-style streaming site built with vanilla HTML, CSS, and JavaScript. Pulls real movie and TV data from TMDB.
 
