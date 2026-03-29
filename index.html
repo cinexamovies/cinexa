@@ -140,23 +140,48 @@
   <div class="player-overlay hidden" id="playerOverlay">
     <div class="player-box">
       <div class="player-header">
-        <span id="playerTitle"></span>
+        <button class="player-btn player-back" id="playerClose" title="Back">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="player-title-wrap">
+          <span class="player-title-main" id="playerTitle"></span>
+        </div>
         <div class="player-controls">
-          <div class="src-btns" id="srcBtns"></div>
+          <button class="player-btn player-server-btn" id="serverPanelBtn" title="Change Server">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/>
+              <line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
+            </svg>
+            <span class="server-btn-label">Servers</span>
+          </button>
           <button class="player-btn" id="playerFullscreen" title="Fullscreen">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
           </button>
-          <button class="player-btn player-close" id="playerClose" title="Close">&times;</button>
         </div>
       </div>
+
+      <!-- SERVER PANEL -->
+      <div class="server-panel-backdrop hidden" id="serverBackdrop"></div>
+      <div class="server-panel hidden" id="serverPanel">
+        <div class="server-panel-header">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          Select Server
+        </div>
+        <div class="server-grid" id="serverGrid"></div>
+      </div>
+
       <div class="player-wrap">
         <iframe id="playerFrame" allowfullscreen allow="autoplay; fullscreen; encrypted-media"
           referrerpolicy="no-referrer" src=""></iframe>
-        <div class="episode-picker hidden" id="episodePicker">
-          <label>Season
+      </div>
+      <div class="episode-picker hidden" id="episodePicker">
+        <div class="ep-picker-inner">
+          <label class="ep-label">
+            <span>Season</span>
             <select id="seasonSelect"></select>
           </label>
-          <label>Episode
+          <label class="ep-label">
+            <span>Episode</span>
             <select id="episodeSelect"></select>
           </label>
         </div>

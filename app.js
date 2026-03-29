@@ -71,10 +71,10 @@ async function init() {
     renderRow(topShowsRow, topShows.slice(0, 20));
 
     showLoading(false);
-    heroSection.classList.remove('hidden');
     mainContent.classList.remove('hidden');
     updateWatchlistBadge();
     renderContinueWatching();
+    await restoreFromHash();
   } catch (err) {
     showLoading(false);
     showToast('Failed to load. Check your internet connection.');
@@ -163,11 +163,18 @@ function renderGrid(container, items, append = false) {
 
 /* ── PLAYER ── */
 const SOURCES = [
-  { label: 'Server 1', movie: id => `https://vidsrc.cc/embed/movie?tmdb=${id}`,      show: (id,s,e) => `https://vidsrc.cc/embed/tv?tmdb=${id}&season=${s}&episode=${e}` },
-  { label: 'Server 2', movie: id => `https://vidsrc.icu/embed/movie/${id}`,           show: (id,s,e) => `https://vidsrc.icu/embed/tv/${id}/${s}/${e}` },
-  { label: 'Server 3', movie: id => `https://vidsrc.xyz/embed/movie/${id}`,           show: (id,s,e) => `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}` },
-  { label: 'Server 4', movie: id => `https://vidsrc.to/embed/movie/${id}`,            show: (id,s,e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
-  { label: 'Server 5', movie: id => `https://embed.su/embed/movie/${id}`,             show: (id,s,e) => `https://embed.su/embed/tv/${id}/${s}/${e}` },
+  { label: 'VidSrc CC',    tag: 'HD',  movie: id => `https://vidsrc.cc/embed/movie?tmdb=${id}`,                show: (id,s,e) => `https://vidsrc.cc/embed/tv?tmdb=${id}&season=${s}&episode=${e}` },
+  { label: 'VidSrc ICU',   tag: 'HD',  movie: id => `https://vidsrc.icu/embed/movie/${id}`,                    show: (id,s,e) => `https://vidsrc.icu/embed/tv/${id}/${s}/${e}` },
+  { label: 'VidSrc XYZ',   tag: 'HD',  movie: id => `https://vidsrc.xyz/embed/movie/${id}`,                    show: (id,s,e) => `https://vidsrc.xyz/embed/tv/${id}/${s}/${e}` },
+  { label: 'VidSrc TO',    tag: 'HD',  movie: id => `https://vidsrc.to/embed/movie/${id}`,                     show: (id,s,e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
+  { label: 'VidSrc ME',    tag: 'HD',  movie: id => `https://vidsrc.me/embed/movie?tmdb=${id}`,                show: (id,s,e) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}` },
+  { label: 'Embed SU',     tag: 'HD',  movie: id => `https://embed.su/embed/movie/${id}`,                      show: (id,s,e) => `https://embed.su/embed/tv/${id}/${s}/${e}` },
+  { label: 'SuperEmbed',   tag: 'HD',  movie: id => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`, show: (id,s,e) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${s}&e=${e}` },
+  { label: 'AutoEmbed',    tag: 'HD',  movie: id => `https://autoembed.co/movie/tmdb/${id}`,                   show: (id,s,e) => `https://autoembed.co/tv/tmdb/${id}-${s}-${e}` },
+  { label: 'VidSrc LOL',   tag: '4K',  movie: id => `https://vidsrc.lol/embed/movie/${id}`,                    show: (id,s,e) => `https://vidsrc.lol/embed/tv/${id}/${s}/${e}` },
+  { label: 'VidSrc Store', tag: 'HD',  movie: id => `https://vidsrc.store/embed/movie/${id}`,                  show: (id,s,e) => `https://vidsrc.store/embed/tv/${id}/${s}/${e}` },
+  { label: 'CineSrc',      tag: 'HD',  movie: id => `https://cinesrc.st/embed/movie/${id}`,                    show: (id,s,e) => `https://cinesrc.st/embed/tv/${id}/${s}/${e}` },
+  { label: 'NontonGo',     tag: 'HD',  movie: id => `https://www.NontonGo.net/embed/movie/${id}`,              show: (id,s,e) => `https://www.NontonGo.net/embed/tv/${id}/${s}/${e}` },
 ];
 
 let currentItem      = null;
@@ -179,7 +186,6 @@ function playContent(id, season, episode) {
   const item = findById(id);
   if (!item) return;
 
-  // Resume from saved progress if no explicit season/episode passed
   const saved = continueWatching[id];
   if (season === undefined) season  = saved?.season  ?? 1;
   if (episode === undefined) episode = saved?.episode ?? 1;
@@ -193,6 +199,7 @@ function playContent(id, season, episode) {
   loadSource();
   playerOverlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  location.hash = `#play/${id}/${season}/${episode}`;
 
   if (item.type === 'show') {
     episodePicker.classList.remove('hidden');
@@ -211,8 +218,8 @@ function loadSource() {
   playerFrame.src = item.type === 'movie'
     ? src.movie(item.tmdbId)
     : src.show(item.tmdbId, currentSeason, currentEpisode);
-  document.querySelectorAll('.src-btn').forEach((btn, i) => {
-    btn.classList.toggle('active-src', i === currentSourceIdx);
+  document.querySelectorAll('.server-card').forEach((card, i) => {
+    card.classList.toggle('active-server', i === currentSourceIdx);
   });
   saveProgress();
 }
@@ -273,6 +280,7 @@ function closePlayer() {
   document.body.style.overflow = '';
   renderContinueWatching();
   currentItem = null;
+  if (location.hash.startsWith('#play/')) location.hash = '#home';
 }
 
 /* ── CONTINUE WATCHING ── */
@@ -470,6 +478,7 @@ function showWatchlistPage() {
   filteredSection.classList.add('hidden');
   watchlistSection.classList.remove('hidden');
   renderWatchlistGrid();
+  setHash('#watchlist');
 }
 
 async function renderWatchlistGrid() {
@@ -620,6 +629,7 @@ async function runSearch(q) {
   searchTitle.textContent = `Results for "${q}"`;
   searchGrid.innerHTML = '<div class="row-loader">Searching...</div>';
   document.querySelectorAll('.filter-pill').forEach(p => p.classList.toggle('active', p.dataset.type === 'all'));
+  setHash(`#search/${encodeURIComponent(q)}`);
   try {
     const results = await searchTMDB(q, 1);
     allSearchResults = results;
@@ -721,9 +731,8 @@ async function handleFilter(filter, label, genreId = '', genreLabel = '') {
   filteredSection.classList.remove('hidden');
   filteredTitle.textContent = genreLabel ? `${label} — ${genreLabel}` : label;
   filteredGrid.innerHTML = '<div class="row-loader">Loading...</div>';
-
-  // show hero + filtered section together
   heroSection.classList.remove('hidden');
+  setHash(`#filter/${filter}/${genreId}/${encodeURIComponent(label)}/${encodeURIComponent(genreLabel)}`);
 
   try {
     const items = await getFilteredItems(filter, 1, genreId);
@@ -766,6 +775,59 @@ function updateLoadMoreBtn(btnId, resultCount, container, handler) {
   btn.onclick = handler;
 }
 
+function saveNavState(state) {
+  // replaced by hash routing — no-op kept for safety
+}
+
+/* ── HASH ROUTING ── */
+function setHash(hash) {
+  location.hash = hash || '#';
+}
+
+let _restoring = false;
+
+async function restoreFromHash() {
+  if (_restoring) return;
+  _restoring = true;
+  const hash = decodeURIComponent(location.hash);
+  if (!hash || hash === '#' || hash === '#home') {
+    heroSection.classList.remove('hidden');
+    _restoring = false;
+    return;
+  }
+  homeRows.classList.add('hidden');
+  heroSection.classList.add('hidden');
+  if (hash === '#watchlist') {
+    showWatchlistPage();
+  } else if (hash.startsWith('#play/')) {
+    const parts = hash.slice(6).split('/');
+    const id      = parts[0];
+    const season  = parseInt(parts[1]) || 1;
+    const episode = parseInt(parts[2]) || 1;
+    heroSection.classList.remove('hidden');
+    homeRows.classList.remove('hidden');
+    await new Promise(r => setTimeout(r, 100)); // let cache settle
+    playContent(id, season, episode);
+  } else if (hash.startsWith('#search/')) {
+    const q = hash.slice(8);
+    searchInput.value = q;
+    await runSearch(q);
+  } else if (hash.startsWith('#filter/')) {
+    const parts = hash.slice(8).split('/');
+    const filter     = parts[0] || '';
+    const genreId    = parts[1] || '';
+    const label      = parts[2] ? decodeURIComponent(parts[2]) : filter;
+    const genreLabel = parts[3] ? decodeURIComponent(parts[3]) : '';
+    await handleFilter(filter, label, genreId, genreLabel);
+  } else {
+    heroSection.classList.remove('hidden');
+    homeRows.classList.remove('hidden');
+  }
+  _restoring = false;
+}
+
+window.addEventListener('hashchange', restoreFromHash);
+
 function showHome() {
   homeRows.classList.remove('hidden');
   heroSection.classList.remove('hidden');
@@ -776,6 +838,7 @@ function showHome() {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
+  setHash('#home');
 }
 
 /* ── HELPERS ── */
@@ -936,21 +999,64 @@ seasonSelect.addEventListener('change', async () => {
   currentEpisode = 1;
   await loadEpisodes(currentItem.tmdbId, currentSeason);
   episodeSelect.value = 1;
-  loadSource(); // saveProgress called inside loadSource
+  loadSource();
+  location.hash = `#play/${currentItem.id}/${currentSeason}/${currentEpisode}`;
 });
 episodeSelect.addEventListener('change', () => {
   currentEpisode = parseInt(episodeSelect.value);
-  loadSource(); // saveProgress called inside loadSource
+  loadSource();
+  location.hash = `#play/${currentItem.id}/${currentSeason}/${currentEpisode}`;
 });
 
-// Build source switcher buttons
+// Build server panel
+const serverGrid = document.getElementById('serverGrid');
+const serverPanel = document.getElementById('serverPanel');
+const serverPanelBtn = document.getElementById('serverPanelBtn');
+const serverBackdrop = document.getElementById('serverBackdrop');
+
+function openServerPanel() {
+  serverPanel.classList.remove('hidden');
+  serverBackdrop.classList.remove('hidden');
+}
+function closeServerPanel() {
+  serverPanel.classList.add('hidden');
+  serverBackdrop.classList.add('hidden');
+}
+
 SOURCES.forEach((src, i) => {
-  const btn = document.createElement('button');
-  btn.className = 'src-btn' + (i === 0 ? ' active-src' : '');
-  btn.textContent = src.label;
-  btn.addEventListener('click', () => { currentSourceIdx = i; loadSource(); });
-  srcBtns.appendChild(btn);
+  const card = document.createElement('button');
+  card.className = 'server-card' + (i === 0 ? ' active-server' : '');
+  card.dataset.idx = i;
+  card.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/>
+      <line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
+    </svg>
+    <span class="server-card-name">${src.label}</span>
+    <span class="server-card-tag">${src.tag}</span>
+  `;
+  card.addEventListener('click', () => {
+    currentSourceIdx = i;
+    loadSource();
+    document.querySelectorAll('.server-card').forEach(c => c.classList.remove('active-server'));
+    card.classList.add('active-server');
+    closeServerPanel();
+  });
+  serverGrid.appendChild(card);
 });
+
+serverPanelBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  serverPanel.classList.contains('hidden') ? openServerPanel() : closeServerPanel();
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#serverPanel') && !e.target.closest('#serverPanelBtn')) {
+    closeServerPanel();
+  }
+});
+
+serverBackdrop.addEventListener('click', closeServerPanel);
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeModal(); closePlayer(); }
