@@ -923,15 +923,6 @@ modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) clo
 playerClose.addEventListener('click', closePlayer);
 playerOverlay.addEventListener('click', e => { if (e.target === playerOverlay) closePlayer(); });
 
-// Block redirect attempts from embed iframes
-window.addEventListener('beforeunload', e => {
-  if (!playerOverlay.classList.contains('hidden')) {
-    e.preventDefault();
-    e.returnValue = '';
-    return '';
-  }
-});
-
 playerFullscreen.addEventListener('click', () => {
   const box = document.querySelector('.player-wrap');
   if (box.requestFullscreen) box.requestFullscreen();
