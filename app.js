@@ -46,6 +46,7 @@ const playerFullscreen = document.getElementById('playerFullscreen');
 const episodePicker    = document.getElementById('episodePicker');
 const seasonSelect     = document.getElementById('seasonSelect');
 const episodeSelect    = document.getElementById('episodeSelect');
+const epNextBtn        = document.getElementById('epNextBtn');
 const continueRow      = document.getElementById('continueRow');
 const continueSection  = document.getElementById('continueSection');
 
@@ -222,6 +223,7 @@ function loadSource() {
     card.classList.toggle('active-server', i === currentSourceIdx);
   });
   saveProgress();
+  updateNextBtn();
 }
 
 async function populateEpisodePicker(item) {
@@ -270,6 +272,7 @@ function buildEpisodeOptions(count) {
     if (e === currentEpisode) opt.selected = true;
     episodeSelect.appendChild(opt);
   }
+  updateNextBtn();
 }
 
 function closePlayer() {
@@ -1102,5 +1105,44 @@ document.querySelectorAll('.row').forEach(row => {
     row.scrollLeft = scrollLeft - (e.pageX - row.offsetLeft - startX);
   });
 });
+
+/* ── AUTOPLAY ── */
+let autoplayTimer = null;
+const AUTOPLAY_SECS = 10;
+const RING_CIRC = 94.2; // 2π×15
+
+/* ── NEXT EPISODE BUTTON ── */
+async function goNextEpisode() {
+  const totalEps     = episodeSelect.options.length;
+  const totalSeasons = seasonSelect.options.length;
+  const nextEp       = currentEpisode + 1;
+  const nextSeason   = currentSeason + 1;
+
+  if (nextEp <= totalEps) {
+    currentEpisode = nextEp;
+    episodeSelect.value = currentEpisode;
+  } else if (nextSeason <= totalSeasons) {
+    currentSeason = nextSeason;
+    currentEpisode = 1;
+    seasonSelect.value = currentSeason;
+    await loadEpisodes(currentItem.tmdbId, currentSeason);
+    episodeSelect.value = 1;
+  } else {
+    showToast('No more episodes');
+    return;
+  }
+  loadSource();
+  location.hash = `#play/${currentItem.id}/${currentSeason}/${currentEpisode}`;
+}
+
+function updateNextBtn() {
+  if (!currentItem || currentItem.type !== 'show') { epNextBtn.classList.add('hidden'); return; }
+  const totalEps     = episodeSelect.options.length;
+  const totalSeasons = seasonSelect.options.length;
+  const hasNext = (currentEpisode + 1 <= totalEps) || (currentSeason + 1 <= totalSeasons);
+  epNextBtn.classList.toggle('hidden', !hasNext);
+}
+
+epNextBtn.addEventListener('click', goNextEpisode);
 
 init();

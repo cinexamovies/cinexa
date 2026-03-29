@@ -382,6 +382,21 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 }
 .ep-label select:focus { border-color: var(--accent); }
 
+.ep-autoplay { margin-left: auto; cursor: pointer; gap: 6px; }
+.ep-autoplay input[type="checkbox"] {
+  width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer;
+}
+
+.ep-next-btn {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  background: var(--accent); border: none; color: #fff;
+  font-size: 0.8rem; font-weight: 600; padding: 7px 14px;
+  border-radius: 6px; cursor: pointer; font-family: inherit;
+  transition: background 0.2s; white-space: nowrap; flex-shrink: 0;
+}
+.ep-next-btn:hover { background: #c40812; }
+.ep-next-btn.hidden { display: none; }
+
 /* load more */
 .load-more-btn {
   display: flex; margin: 20px auto 0; justify-content: center;
