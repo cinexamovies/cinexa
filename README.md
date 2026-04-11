@@ -1,6 +1,6 @@
-# CINEXA
+# awu & chill
 
-A Netflix/MyFlixer-style streaming site built with vanilla HTML, CSS, and JavaScript. Pulls real movie and TV data from TMDB.
+A Netflix-style streaming site built with vanilla HTML, CSS, and JavaScript. Pulls real movie and TV data from TMDB and streams via third-party embed sources.
 
 ---
 
@@ -8,15 +8,20 @@ A Netflix/MyFlixer-style streaming site built with vanilla HTML, CSS, and JavaSc
 
 - Real movies and TV shows via TMDB API
 - Hero banner with featured content
-- Horizontal rows — Trending, Popular Movies, Now Playing, Top Rated TV
-- Genre filtering under Movies and TV Shows nav dropdowns
-- Live search suggestions as you type, full results on Enter
+- Horizontal drag-scrollable rows — Trending, Popular, Now Playing, Top Rated, Upcoming, Airing Today, and genre-specific rows
+- Genre browser with full movie and TV genre categories
+- Nav dropdowns for Movies and TV Shows with genre filtering
+- Live search with instant suggestions and full results on Enter
 - Movie/show detail modal with ratings, runtime, genres, and trailer
-- Embedded player with 4 server options to switch if one fails
-- TV show episode picker — season and episode selectors in the player
-- Continue Watching row — saves your season/episode progress across sessions
-- Watchlist — persisted to localStorage, accessible from the nav
-- Fully responsive — desktop, tablet, and mobile bottom nav
+- Embedded player with 12 server options
+- Episode sidebar — scrollable episode list next to the video for TV shows
+- Season selector in the episode sidebar
+- Continue Watching row — saves season, episode, and server progress per title
+- Watchlist — persisted to localStorage, accessible from the nav heart icon
+- Light/dark mode toggle with preference saved to localStorage
+- "Feeling Lucky" random title picker
+- Right-click disabled on the player
+- Fully responsive — desktop, tablet, and mobile with bottom nav
 
 ---
 
@@ -24,19 +29,18 @@ A Netflix/MyFlixer-style streaming site built with vanilla HTML, CSS, and JavaSc
 
 No build step, no dependencies.
 
-**Option 1 — Python (recommended)**
+**Python**
 ```bash
-cd streaming-site
 python -m http.server 8080
 ```
 Then open `http://localhost:8080`
 
-**Option 2 — Node**
+**Node**
 ```bash
-npx serve streaming-site
+npx serve .
 ```
 
-> Do not open `index.html` directly as a `file://` URL — the TMDB API calls will work but some browser behaviors (scroll, navigation) won't.
+> Don't open `index.html` directly as a `file://` URL — some browser security restrictions will cause issues.
 
 ---
 
@@ -48,17 +52,14 @@ The project uses a hardcoded TMDB v3 API key in `data.js`. To use your own:
 2. Go to Settings → API → copy your **API Key (v3)**
 3. Open `data.js` and replace the value of `TMDB_API_KEY`
 
-TMDB is free with no rate limits for normal usage.
-
 ---
 
 ## File Structure
 
 ```
-streaming-site/
 ├── index.html   — markup and layout
-├── style.css    — all styles including responsive breakpoints
-├── app.js       — all UI logic, state, events
+├── style.css    — all styles, light/dark mode, responsive breakpoints
+├── app.js       — all UI logic, state, player, events
 └── data.js      — TMDB API layer, fetch functions, data normalization
 ```
 
@@ -70,21 +71,35 @@ streaming-site/
 |---|---|
 | Site name / logo | `index.html` — `<title>` and `.logo` div |
 | Accent color | `style.css` — `--accent` CSS variable |
-| Number of results per row | `app.js` — `.slice(0, 20)` calls in `init()` |
+| Results per row | `app.js` — `.slice(0, 20)` calls in `init()` |
 | Embed servers | `app.js` — `SOURCES` array |
-| Genre list | `index.html` — `.nav-dropdown` lists |
+| Genre list | `index.html` — `.nav-dropdown` and genre browser section |
 
 ---
 
-## Player Servers
+## Embed Servers
 
-If a title shows "unavailable", switch servers using the buttons in the player header.
+If a title doesn't load, switch servers using the server bar below the video.
 
-| Server | Source |
-|---|---|
-| Server 1 | vidsrc.xyz |
-| Server 2 | vidsrc.to |
-| Server 3 | 2embed.cc |
-| Server 4 | moviesapi.club |
+| Server | Quality | Domain |
+|---|---|---|
+| VidSrc CC | HD | vidsrc.cc |
+| VidSrc ICU | HD | vidsrc.icu |
+| VidSrc XYZ | HD | vidsrc.xyz |
+| VidSrc TO | HD | vidsrc.to |
+| VidSrc ME | HD | vidsrc.me |
+| Embed SU | HD | embed.su |
+| SuperEmbed | HD | multiembed.mov |
+| AutoEmbed | HD | autoembed.co |
+| VidSrc LOL | 4K | vidsrc.lol |
+| VidSrc Store | HD | vidsrc.store |
+| CineSrc | HD | cinesrc.st |
+| NontonGo | HD | nontongo.net |
 
 Not every title is indexed on every server.
+
+---
+
+## Legal
+
+This project is for personal/educational use only. It does not host any content — all media is streamed via third-party embed sources. Use responsibly.

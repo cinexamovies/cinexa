@@ -132,3 +132,27 @@ async function fetchByGenre(type, page = 1, genreId = '') {
     ? d.results.map(normalizeMovie)
     : d.results.map(normalizeShow);
 }
+
+async function fetchTopRatedMovies(page = 1) {
+  const d = await tmdbFetch('/movie/top_rated', { page });
+  return d.results.map(normalizeMovie);
+}
+
+async function fetchUpcoming(page = 1) {
+  const d = await tmdbFetch('/movie/upcoming', { page });
+  return d.results.map(normalizeMovie);
+}
+
+async function fetchAiringToday(page = 1) {
+  const d = await tmdbFetch('/tv/airing_today', { page });
+  return d.results.map(normalizeShow);
+}
+
+async function fetchMovies2026(page = 1) {
+  const d = await tmdbFetch('/discover/movie', {
+    page,
+    primary_release_year: 2026,
+    sort_by: 'popularity.desc',
+  });
+  return d.results.map(normalizeMovie);
+}

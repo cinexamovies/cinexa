@@ -1,11 +1,9 @@
-/* ── STATE ── */
+
 let watchlist   = JSON.parse(localStorage.getItem('watchlist') || '[]');
 let allCache    = {};
 let detailCache = JSON.parse(localStorage.getItem('detailCache') || '{}');
 let continueWatching = JSON.parse(localStorage.getItem('continueWatching') || '{}');
-// { [id]: { id, season, episode, watchedAt, sourceIdx } }
 
-/* ── DOM ── */
 const navbar           = document.getElementById('navbar');
 const heroBg           = document.getElementById('heroBg');
 const heroContent      = document.getElementById('heroContent');
@@ -14,6 +12,17 @@ const moviesRow        = document.getElementById('moviesRow');
 const showsRow         = document.getElementById('showsRow');
 const newRow           = document.getElementById('newRow');
 const topShowsRow      = document.getElementById('topShowsRow');
+const topMoviesRow     = document.getElementById('topMoviesRow');
+const upcomingRow      = document.getElementById('upcomingRow');
+const airingTodayRow   = document.getElementById('airingTodayRow');
+const actionMoviesRow  = document.getElementById('actionMoviesRow');
+const comedyMoviesRow  = document.getElementById('comedyMoviesRow');
+const horrorMoviesRow  = document.getElementById('horrorMoviesRow');
+const scifiMoviesRow   = document.getElementById('scifiMoviesRow');
+const dramaShowsRow    = document.getElementById('dramaShowsRow');
+const comedyShowsRow   = document.getElementById('comedyShowsRow');
+const crimeShowsRow    = document.getElementById('crimeShowsRow');
+const animationRow     = document.getElementById('animationRow');
 const homeRows         = document.getElementById('homeRows');
 const searchSection    = document.getElementById('searchSection');
 const searchGrid       = document.getElementById('searchGrid');
@@ -34,6 +43,7 @@ const searchTitle      = document.getElementById('searchTitle');
 const toast            = document.getElementById('toast');
 const hamburger        = document.getElementById('hamburger');
 const navLinks         = document.getElementById('navLinks');
+const watchlistHeart   = document.getElementById('watchlistHeart');
 const heroSection      = document.getElementById('hero');
 const loadingScreen    = document.getElementById('loadingScreen');
 const mainContent      = document.getElementById('mainContent');
@@ -41,35 +51,90 @@ const playerOverlay    = document.getElementById('playerOverlay');
 const playerFrame      = document.getElementById('playerFrame');
 const playerClose      = document.getElementById('playerClose');
 const playerTitle      = document.getElementById('playerTitle');
-const srcBtns          = document.getElementById('srcBtns');
-const playerFullscreen = document.getElementById('playerFullscreen');
+const playerSubtitle   = document.getElementById('playerSubtitle');
+
 const episodePicker    = document.getElementById('episodePicker');
 const seasonSelect     = document.getElementById('seasonSelect');
 const episodeSelect    = document.getElementById('episodeSelect');
-const epNextBtn        = document.getElementById('epNextBtn');
+
 const continueRow      = document.getElementById('continueRow');
 const continueSection  = document.getElementById('continueSection');
+const genreBrowserSection = document.getElementById('genreBrowserSection');
 
-/* ── INIT ── */
 async function init() {
   showLoading(true);
+
+  ['searchLoadMore', 'filteredLoadMore'].forEach(id => {
+    clearInfiniteScroll(id);
+  });
+
+  document.querySelectorAll('.load-more-btn').forEach(btn => btn.remove());
+  
   try {
-    const [trending, movies, shows, nowPlaying, topShows] = await Promise.all([
+
+    const [
+      trending, 
+      movies, 
+      shows, 
+      nowPlaying, 
+      topShows,
+      topMovies,
+      upcoming,
+      airingToday,
+      actionMovies,
+      comedyMovies,
+      horrorMovies,
+      scifiMovies,
+      dramaShows,
+      comedyShows,
+      crimeShows,
+      animation
+    ] = await Promise.all([
       fetchTrending(),
       fetchPopularMovies(),
       fetchPopularShows(),
       fetchNowPlaying(),
       fetchTopRatedShows(),
+      fetchTopRatedMovies(),
+      fetchUpcoming(),
+      fetchAiringToday(),
+      fetchByGenre('movie', 1, '28'), // Action
+      fetchByGenre('movie', 1, '35'), // Comedy
+      fetchByGenre('movie', 1, '27'), // Horror
+      fetchByGenre('movie', 1, '878'), // Sci-Fi
+      fetchByGenre('show', 1, '18'), // Drama
+      fetchByGenre('show', 1, '35'), // Comedy
+      fetchByGenre('show', 1, '80'), // Crime
+      fetchByGenre('movie', 1, '16').then(movies => 
+        fetchByGenre('show', 1, '16').then(shows => [...movies, ...shows])
+      ) // Animation (both movies and shows)
     ]);
-    allCache = { trending, movies, shows, nowPlaying, topShows };
+
+    allCache = { 
+      trending, movies, shows, nowPlaying, topShows, topMovies, upcoming, airingToday,
+      actionMovies, comedyMovies, horrorMovies, scifiMovies, 
+      dramaShows, comedyShows, crimeShows, animation
+    };
 
     const heroPool = trending.filter(i => i.banner);
     renderHero(heroPool[Math.floor(Math.random() * Math.min(5, heroPool.length))]);
+
     renderRow(trendingRow, trending.slice(0, 20));
-    renderRow(moviesRow,   movies.slice(0, 20));
-    renderRow(newRow,      nowPlaying.slice(0, 20));
-    renderRow(showsRow,    shows.slice(0, 20));
+    renderRow(moviesRow, movies.slice(0, 20));
+    renderRow(newRow, nowPlaying.slice(0, 20));
+    renderRow(showsRow, shows.slice(0, 20));
     renderRow(topShowsRow, topShows.slice(0, 20));
+    renderRow(topMoviesRow, topMovies.slice(0, 20));
+    renderRow(upcomingRow, upcoming.slice(0, 20));
+    renderRow(airingTodayRow, airingToday.slice(0, 20));
+    renderRow(actionMoviesRow, actionMovies.slice(0, 20));
+    renderRow(comedyMoviesRow, comedyMovies.slice(0, 20));
+    renderRow(horrorMoviesRow, horrorMovies.slice(0, 20));
+    renderRow(scifiMoviesRow, scifiMovies.slice(0, 20));
+    renderRow(dramaShowsRow, dramaShows.slice(0, 20));
+    renderRow(comedyShowsRow, comedyShows.slice(0, 20));
+    renderRow(crimeShowsRow, crimeShows.slice(0, 20));
+    renderRow(animationRow, animation.slice(0, 20));
 
     showLoading(false);
     mainContent.classList.remove('hidden');
@@ -87,7 +152,6 @@ function showLoading(on) {
   loadingScreen.classList.toggle('hidden', !on);
 }
 
-/* ── HERO ── */
 function renderHero(item) {
   if (!item) return;
   heroBg.style.backgroundImage = `url('${item.banner}')`;
@@ -119,7 +183,6 @@ function renderHero(item) {
   `;
 }
 
-/* ── CARD ── */
 function createCard(item) {
   const div = document.createElement('div');
   div.className = 'card';
@@ -162,7 +225,6 @@ function renderGrid(container, items, append = false) {
   items.forEach(i => container.appendChild(createCard(i)));
 }
 
-/* ── PLAYER ── */
 const SOURCES = [
   { label: 'VidSrc CC',    tag: 'HD',  movie: id => `https://vidsrc.cc/embed/movie?tmdb=${id}`,                show: (id,s,e) => `https://vidsrc.cc/embed/tv?tmdb=${id}&season=${s}&episode=${e}` },
   { label: 'VidSrc ICU',   tag: 'HD',  movie: id => `https://vidsrc.icu/embed/movie/${id}`,                    show: (id,s,e) => `https://vidsrc.icu/embed/tv/${id}/${s}/${e}` },
@@ -198,24 +260,35 @@ function playContent(id, season, episode) {
 
   saveProgress();
   loadSource();
+  setupNewPlayer(item);
   playerOverlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   location.hash = `#play/${id}/${season}/${episode}`;
 
   if (item.type === 'show') {
-    episodePicker.classList.remove('hidden');
     populateEpisodePicker(item);
+    setupEpisodeSection(item);
   } else {
-    episodePicker.classList.add('hidden');
+    document.getElementById('episodeSection').classList.add('hidden');
   }
+  
+  setupRecommendations(item);
 }
 
 function loadSource() {
   const item = currentItem;
   const src  = SOURCES[currentSourceIdx];
-  playerTitle.textContent = item.type === 'show'
-    ? `${item.title} — S${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')} — ${src.label}`
-    : `${item.title} — ${src.label}`;
+  playerTitle.textContent = item.title;
+  if (playerSubtitle) {
+    if (item.type === 'show') {
+      const episodeData = window.currentEpisodeData || [];
+      const episode = episodeData[currentEpisode - 1];
+      const episodeName = episode?.name || `Episode ${currentEpisode}`;
+      playerSubtitle.textContent = `S${String(currentSeason).padStart(2,'0')}E${String(currentEpisode).padStart(2,'0')}: ${episodeName} — ${src.label}`;
+    } else {
+      playerSubtitle.textContent = src.label;
+    }
+  }
   playerFrame.src = item.type === 'movie'
     ? src.movie(item.tmdbId)
     : src.show(item.tmdbId, currentSeason, currentEpisode);
@@ -224,13 +297,14 @@ function loadSource() {
   });
   saveProgress();
   updateNextBtn();
+  renderSidebarEpisodes();
 }
 
 async function populateEpisodePicker(item) {
   seasonSelect.innerHTML = '<option>Loading...</option>';
   episodeSelect.innerHTML = '';
   try {
-    // Get season count from detail cache or fetch it
+
     let detail = detailCache[item.id];
     if (!detail) {
       detail = await fetchDetail({ ...item });
@@ -257,9 +331,14 @@ async function loadEpisodes(tmdbId, season) {
   episodeSelect.innerHTML = '<option>Loading...</option>';
   try {
     const data = await tmdbFetch(`/tv/${tmdbId}/season/${season}`);
-    const count = data.episodes?.length || 12;
+    const episodes = data.episodes || [];
+
+    window.currentEpisodeData = episodes;
+    
+    const count = episodes.length || 12;
     buildEpisodeOptions(count);
   } catch (_) {
+    window.currentEpisodeData = [];
     buildEpisodeOptions(12);
   }
 }
@@ -273,6 +352,17 @@ function buildEpisodeOptions(count) {
     episodeSelect.appendChild(opt);
   }
   updateNextBtn();
+  renderSidebarEpisodes();
+}
+
+function renderSidebarEpisodes() {
+
+  console.log('renderSidebarEpisodes called but not implemented in new layout');
+}
+
+function renderSidebarServers() {
+
+  console.log('renderSidebarServers called but not implemented in new layout');
 }
 
 function closePlayer() {
@@ -280,13 +370,13 @@ function closePlayer() {
   playerOverlay.classList.add('hidden');
   playerFrame.src = '';
   episodePicker.classList.add('hidden');
+
   document.body.style.overflow = '';
   renderContinueWatching();
   currentItem = null;
   if (location.hash.startsWith('#play/')) location.hash = '#home';
 }
 
-/* ── CONTINUE WATCHING ── */
 function saveProgress() {
   if (!currentItem) return;
   continueWatching[currentItem.id] = {
@@ -309,7 +399,6 @@ async function renderContinueWatching() {
     return;
   }
 
-  // Resolve items — fetch any not in cache
   const items = await Promise.all(entries.map(async entry => {
     let item = findById(entry.id);
     if (!item) {
@@ -385,7 +474,6 @@ function timeAgo(ts) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-/* ── MODAL ── */
 async function openModal(id) {
   let item = findById(id);
   if (!item) return;
@@ -428,8 +516,6 @@ async function openModal(id) {
         ${inWL ? '&#10003; In Watchlist' : '+ Watchlist'}
       </button>
     </div>
-    <a class="tmdb-link" href="https://www.themoviedb.org/${item.type === 'show' ? 'tv' : 'movie'}/${item.tmdbId}"
-       target="_blank" rel="noopener">View on TMDB</a>
   `;
 }
 
@@ -438,7 +524,6 @@ function closeModal() {
   document.body.style.overflow = '';
 }
 
-/* ── TRAILER ── */
 function openTrailer(key) {
   let wrap = document.getElementById('trailerWrap');
   if (wrap) wrap.remove();
@@ -455,7 +540,6 @@ function openTrailer(key) {
   document.body.appendChild(wrap);
 }
 
-/* ── WATCHLIST ── */
 function toggleWatchlist(id, btn) {
   const item = findById(id);
   const title = item?.title || 'Item';
@@ -495,18 +579,17 @@ async function renderWatchlistGrid() {
   watchlistEmpty.classList.add('hidden');
   watchlistGrid.classList.remove('hidden');
 
-  // Items may not be in allCache if they were added in a previous session — fetch them
   const items = await Promise.all(watchlist.map(async id => {
     const cached = findById(id);
     if (cached) return cached;
-    // Try to fetch from TMDB by parsing the id prefix
+
     try {
       const tmdbId = id.slice(1); // strip 'm' or 't'
       const type   = id.startsWith('m') ? 'movie' : 'show';
       const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
       const data = await tmdbFetch(endpoint);
       const item = type === 'movie' ? normalizeMovie(data) : normalizeShow(data);
-      // store so future lookups work
+
       if (!allCache.watchlistFetched) allCache.watchlistFetched = [];
       allCache.watchlistFetched.push(item);
       return item;
@@ -524,10 +607,22 @@ async function renderWatchlistGrid() {
 }
 
 function updateWatchlistBadge() {
-  // no-op: avatar element removed
+  const count = watchlist.length;
+  let badge = watchlistHeart.querySelector('.wl-badge');
+  if (count > 0) {
+    watchlistHeart.classList.add('has-items');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'wl-badge';
+      watchlistHeart.appendChild(badge);
+    }
+    badge.textContent = count > 99 ? '99+' : count;
+  } else {
+    watchlistHeart.classList.remove('has-items');
+    if (badge) badge.remove();
+  }
 }
 
-/* ── SEARCH ── */
 let searchTimeout;
 let searchPage    = 1;
 let lastQuery     = '';
@@ -546,7 +641,7 @@ function handleSearch(query) {
 
 let suggestTimeout;
 async function showSuggestions(q) {
-  // show instantly from cache first
+
   const pool = [
     ...(allCache.trending   || []),
     ...(allCache.movies     || []),
@@ -557,18 +652,17 @@ async function showSuggestions(q) {
   const cacheHits = pool.filter(i => i.title.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
   renderSuggestions(cacheHits, q, true);
 
-  // then fetch live from TMDB
   clearTimeout(suggestTimeout);
   suggestTimeout = setTimeout(async () => {
     try {
       const results = await searchTMDB(q, 1);
-      // merge: live results first, then any cache-only hits not already in results
+
       const ids = new Set(results.map(r => r.id));
       const merged = [...results, ...cacheHits.filter(c => !ids.has(c.id))].slice(0, 8);
-      // store so findById works
+
       allCache.search = results;
       renderSuggestions(merged, q, false);
-    } catch (_) { /* keep showing cache hits */ }
+    } catch (_) {  }
   }, 300);
 }
 
@@ -600,7 +694,7 @@ function renderSuggestions(items, q, loading) {
   searchSuggestions.querySelectorAll('.suggestion-item').forEach(el => {
     el.addEventListener('mousedown', e => {
       e.preventDefault();
-      // find in merged pool including freshly fetched search results
+
       const all = [...pool, ...(allCache.search || [])];
       const item = all.find(i => i.id === el.dataset.id);
       if (item) { hideSuggestions(); searchInput.value = item.title; openModal(item.id); }
@@ -624,6 +718,9 @@ async function runSearch(q) {
   searchPage       = 1;
   searchTypeFilter = 'all';
   hideSuggestions();
+
+  clearInfiniteScroll('searchLoadMore');
+  
   homeRows.classList.add('hidden');
   heroSection.classList.add('hidden');
   filteredSection.classList.add('hidden');
@@ -649,7 +746,7 @@ function applySearchTypeFilter() {
     ? allSearchResults
     : allSearchResults.filter(i => i.type === searchTypeFilter);
   renderGrid(searchGrid, filtered);
-  // update pill active state
+
   document.querySelectorAll('.filter-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.type === searchTypeFilter);
   });
@@ -667,7 +764,7 @@ function showSuggestionsFromCache(q) {
     .slice(0, 6);
 
   if (!matches.length) {
-    // still show the panel with a hint instead of hiding it
+
     searchSuggestions.innerHTML = `
       <div class="suggestion-hint">Press Enter to search for "<strong>${q}</strong>"</div>
     `;
@@ -707,30 +804,47 @@ function hideSuggestions() {
 
 async function loadMoreSearch() {
   searchPage++;
-  const results = await searchTMDB(lastQuery, searchPage);
-  allSearchResults = [...allSearchResults, ...results];
-  allCache.search  = allSearchResults;
-  applySearchTypeFilter();
-  updateLoadMoreBtn('searchLoadMore', results.length, searchGrid, loadMoreSearch);
+  try {
+    const results = await searchTMDB(lastQuery, searchPage);
+    allSearchResults = [...allSearchResults, ...results];
+    allCache.search  = allSearchResults;
+    applySearchTypeFilter();
+    updateLoadMoreBtn('searchLoadMore', results.length, searchGrid, loadMoreSearch);
+  } catch (error) {
+
+    clearInfiniteScroll('searchLoadMore');
+  }
 }
 
-/* ── FILTER ── */
 let filteredPage      = 1;
 let currentFilterKey  = '';
 let currentGenreId    = '';
 let currentGenreLabel = '';
 
 async function handleFilter(filter, label, genreId = '', genreLabel = '') {
+  console.log(`handleFilter called with: filter=${filter}, label=${label}, genreId=${genreId}, genreLabel=${genreLabel}`);
+  
   searchInput.value = '';
   hideSuggestions();
   if (filter === 'all') { showHome(); return; }
+
+  if (filter === 'browse_genres') {
+    showGenreBrowser();
+    return;
+  }
+
+  clearInfiniteScroll('filteredLoadMore');
+  
   currentFilterKey  = filter;
   currentGenreId    = genreId;
   currentGenreLabel = genreLabel;
   filteredPage = 1;
+
   homeRows.classList.add('hidden');
   searchSection.classList.add('hidden');
   watchlistSection.classList.add('hidden');
+  genreBrowserSection.classList.add('hidden');
+
   filteredSection.classList.remove('hidden');
   filteredTitle.textContent = genreLabel ? `${label} — ${genreLabel}` : label;
   filteredGrid.innerHTML = '<div class="row-loader">Loading...</div>';
@@ -738,51 +852,144 @@ async function handleFilter(filter, label, genreId = '', genreLabel = '') {
   setHash(`#filter/${filter}/${genreId}/${encodeURIComponent(label)}/${encodeURIComponent(genreLabel)}`);
 
   try {
+    console.log('Fetching items...');
     const items = await getFilteredItems(filter, 1, genreId);
+    console.log(`Received ${items.length} items`);
+    
+    if (items.length === 0) {
+      filteredGrid.innerHTML = '<p class="empty-msg">No content found for this genre.</p>';
+      return;
+    }
+    
     allCache.filtered = items;
     renderGrid(filteredGrid, items);
     updateLoadMoreBtn('filteredLoadMore', items.length, filteredGrid, loadMoreFiltered);
-    // update hero to a random item from this genre that has a banner
+
     const heroPool = items.filter(i => i.banner);
-    if (heroPool.length) renderHero(heroPool[Math.floor(Math.random() * Math.min(5, heroPool.length))]);
-  } catch (_) {
-    filteredGrid.innerHTML = '<p class="empty-msg">Failed to load.</p>';
+    if (heroPool.length) {
+      renderHero(heroPool[Math.floor(Math.random() * Math.min(5, heroPool.length))]);
+    }
+  } catch (error) {
+    console.error('Error in handleFilter:', error);
+    filteredGrid.innerHTML = '<p class="empty-msg">Failed to load content. Please try again.</p>';
   }
 }
 
 async function loadMoreFiltered() {
   filteredPage++;
-  const items = await getFilteredItems(currentFilterKey, filteredPage, currentGenreId);
-  allCache.filtered = [...(allCache.filtered || []), ...items];
-  renderGrid(filteredGrid, items, true);
-  updateLoadMoreBtn('filteredLoadMore', items.length, filteredGrid, loadMoreFiltered);
+  try {
+    const items = await getFilteredItems(currentFilterKey, filteredPage, currentGenreId);
+    allCache.filtered = [...(allCache.filtered || []), ...items];
+    renderGrid(filteredGrid, items, true);
+    updateLoadMoreBtn('filteredLoadMore', items.length, filteredGrid, loadMoreFiltered);
+  } catch (error) {
+
+    clearInfiniteScroll('filteredLoadMore');
+  }
 }
 
 async function getFilteredItems(filter, page, genreId = '') {
-  if (filter === 'trending') return page === 1 ? (allCache.trending || await fetchTrending()) : [];
-  if (filter === 'movie')    return fetchByGenre('movie', page, genreId);
-  if (filter === 'show')     return fetchByGenre('tv',    page, genreId);
+  console.log(`getFilteredItems called with: filter=${filter}, page=${page}, genreId=${genreId}`);
+  
+  if (filter === 'trending')        return page === 1 ? (allCache.trending || await fetchTrending()) : [];
+  if (filter === 'movie')           return await fetchByGenre('movie', page, genreId);
+  if (filter === 'show')            return await fetchByGenre('tv', page, genreId);
+  if (filter === 'new')             return await fetchNowPlaying();
+  if (filter === 'browse')          return page === 1 ? (allCache.trending || await fetchTrending()) : [];
+  if (filter === 'browse_genres')   return []; // Special case - shows genre browser
+  if (filter === 'top_rated')       return await fetchByGenre('tv', page, ''); // TV shows only for top rated
+  if (filter === 'top_rated_movies') return await fetchTopRatedMovies(page);
+  if (filter === 'collections')     return await fetchByGenre('movie', page, '');
+  if (filter === 'countries')       return await fetchByGenre('movie', page, '');
+  if (filter === 'networks')        return await fetchByGenre('tv', page, '');
+  if (filter === 'movies_2026')     return await fetchMovies2026(page);
+  if (filter === 'now_playing')     return await fetchNowPlaying();
+  if (filter === 'upcoming')        return await fetchUpcoming(page);
+  if (filter === 'airing_today')    return await fetchAiringToday(page);
   return [];
 }
 
 function updateLoadMoreBtn(btnId, resultCount, container, handler) {
+
   let btn = document.getElementById(btnId);
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.id = btnId;
-    btn.className = 'btn btn-secondary load-more-btn';
-    btn.textContent = 'Load More';
-    container.after(btn);
+  if (btn) {
+    btn.remove();
   }
-  btn.style.display = resultCount >= 20 ? 'flex' : 'none';
-  btn.onclick = handler;
+
+  clearInfiniteScroll(btnId);
+
+  if (resultCount >= 20) {
+    setupInfiniteScroll(container, handler, btnId);
+  } else if (resultCount > 0) {
+
+    setupInfiniteScroll(container, handler, btnId);
+  }
+}
+
+const scrollObservers = new Map();
+
+function setupInfiniteScroll(container, loadMoreHandler, observerId) {
+
+  if (scrollObservers.has(observerId)) {
+    scrollObservers.get(observerId).disconnect();
+  }
+
+  let sentinel = document.getElementById(`${observerId}-sentinel`);
+  if (!sentinel) {
+    sentinel = document.createElement('div');
+    sentinel.id = `${observerId}-sentinel`;
+    sentinel.className = 'scroll-sentinel';
+    sentinel.innerHTML = '<div class="loading-indicator hidden"><div class="spinner"></div><p>Loading more...</p></div>';
+    container.after(sentinel);
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.loading) {
+          entry.target.dataset.loading = 'true';
+
+          const indicator = entry.target.querySelector('.loading-indicator');
+          if (indicator) indicator.classList.remove('hidden');
+          
+          loadMoreHandler().finally(() => {
+            entry.target.dataset.loading = 'false';
+
+            if (indicator) indicator.classList.add('hidden');
+          });
+        }
+      });
+    },
+    {
+      rootMargin: '100px' // Trigger 100px before the sentinel comes into view
+    }
+  );
+  
+  observer.observe(sentinel);
+  scrollObservers.set(observerId, observer);
+}
+
+function clearInfiniteScroll(observerId) {
+  if (scrollObservers.has(observerId)) {
+    scrollObservers.get(observerId).disconnect();
+    scrollObservers.delete(observerId);
+  }
+  
+  const sentinel = document.getElementById(`${observerId}-sentinel`);
+  if (sentinel) {
+    sentinel.remove();
+  }
+
+  const oldBtn = document.getElementById(observerId);
+  if (oldBtn) {
+    oldBtn.remove();
+  }
 }
 
 function saveNavState(state) {
-  // replaced by hash routing — no-op kept for safety
+
 }
 
-/* ── HASH ROUTING ── */
 function setHash(hash) {
   location.hash = hash || '#';
 }
@@ -829,7 +1036,10 @@ async function restoreFromHash() {
   _restoring = false;
 }
 
-window.addEventListener('hashchange', restoreFromHash);
+window.addEventListener('hashchange', () => {
+  if (!playerOverlay.classList.contains('hidden')) return;
+  restoreFromHash();
+});
 
 function showHome() {
   homeRows.classList.remove('hidden');
@@ -837,14 +1047,15 @@ function showHome() {
   searchSection.classList.add('hidden');
   filteredSection.classList.add('hidden');
   watchlistSection.classList.add('hidden');
+  genreBrowserSection.classList.add('hidden');
+
   ['searchLoadMore','filteredLoadMore'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
+    clearInfiniteScroll(id);
   });
+  
   setHash('#home');
 }
 
-/* ── HELPERS ── */
 function findById(id) {
   if (detailCache[id]) return detailCache[id];
   const pool = [
@@ -861,7 +1072,7 @@ function findById(id) {
 }
 
 function persistDetailCache() {
-  // Only persist lightweight fields to avoid quota issues
+
   const slim = {};
   Object.entries(detailCache).forEach(([k, v]) => {
     slim[k] = { id: v.id, tmdbId: v.tmdbId, title: v.title, type: v.type,
@@ -872,7 +1083,6 @@ function persistDetailCache() {
   try { localStorage.setItem('detailCache', JSON.stringify(slim)); } catch (_) {}
 }
 
-/* ── TOAST ── */
 let toastTimer;
 function showToast(msg) {
   clearTimeout(toastTimer);
@@ -881,16 +1091,18 @@ function showToast(msg) {
   toastTimer = setTimeout(() => toast.classList.add('hidden'), 3500);
 }
 
-/* ── EVENTS ── */
 window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 20));
 
-document.querySelectorAll('.nav-links > li > a').forEach(link => {
+document.querySelectorAll('.nav-center > li > a').forEach(link => {
   link.addEventListener('click', e => {
     e.preventDefault();
     if (link.closest('.has-dropdown')) return; // handled by dropdown toggle below
     const filter = link.dataset.filter;
-    const labels = { all: 'Home', trending: 'Trending', watchlist: 'My Watchlist' };
-    document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+    const labels = { all: 'Home', trending: 'Trending', watchlist: 'My Watchlist', new: 'New', browse: 'Browse',
+      genres: 'Genres', top_rated: 'Top Rated', collections: 'Collections', countries: 'Countries',
+      networks: 'Networks', movies_2026: '2026 Movies', now_playing: 'Now Playing',
+      upcoming: 'Upcoming', airing_today: 'Airing Today' };
+    document.querySelectorAll('.nav-center a').forEach(l => l.classList.remove('active'));
     link.classList.add('active');
     if (filter === 'watchlist') showWatchlistPage();
     else handleFilter(filter, labels[filter] || filter);
@@ -898,7 +1110,6 @@ document.querySelectorAll('.nav-links > li > a').forEach(link => {
   });
 });
 
-// Dropdown toggle — parent link ONLY opens/closes dropdown, never navigates
 document.querySelectorAll('.has-dropdown > a').forEach(link => {
   link.addEventListener('click', e => {
     e.preventDefault();
@@ -915,7 +1126,6 @@ document.querySelectorAll('.has-dropdown > a').forEach(link => {
   });
 });
 
-// Dropdown items — these actually navigate
 document.querySelectorAll('.nav-dropdown a').forEach(link => {
   link.addEventListener('click', e => {
     e.preventDefault();
@@ -923,11 +1133,17 @@ document.querySelectorAll('.nav-dropdown a').forEach(link => {
     const filter     = link.dataset.filter;
     const genreId    = link.dataset.genre ?? '';
     const genreLabel = link.textContent.trim();
-    const labels     = { movie: 'Movies', show: 'TV Shows' };
+    const labels = {
+      movie: 'Movies', show: 'TV Shows',
+      trending: 'Trending', genres: 'Genres', top_rated: 'Top Rated',
+      collections: 'Collections', countries: 'Countries', networks: 'Networks',
+      movies_2026: '2026 Movies', now_playing: 'Now Playing',
+      upcoming: 'Upcoming', airing_today: 'Airing Today',
+    };
 
     document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
     document.querySelectorAll('.has-dropdown').forEach(l => l.classList.remove('open'));
-    document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+    document.querySelectorAll('.nav-center a').forEach(l => l.classList.remove('active'));
     link.closest('.has-dropdown').querySelector('a').classList.add('active');
 
     handleFilter(filter, labels[filter] || genreLabel, genreId, genreId ? genreLabel : '');
@@ -935,7 +1151,6 @@ document.querySelectorAll('.nav-dropdown a').forEach(link => {
   });
 });
 
-// Close dropdowns when clicking outside
 document.addEventListener('click', e => {
   if (!e.target.closest('.has-dropdown')) {
     document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
@@ -945,12 +1160,10 @@ document.addEventListener('click', e => {
 
 document.querySelector('.logo').addEventListener('click', () => {
   searchInput.value = '';
-  document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.nav-center a').forEach(l => l.classList.remove('active'));
   document.querySelector('[data-filter="all"]').classList.add('active');
   showHome();
 });
-
-
 
 clearWatchlist.addEventListener('click', () => {
   if (!watchlist.length) return;
@@ -976,7 +1189,6 @@ searchInput.addEventListener('keydown', e => {
 searchInput.addEventListener('blur', () => setTimeout(hideSuggestions, 150));
 searchInput.addEventListener('focus', e => { if (e.target.value.trim()) showSuggestions(e.target.value.trim()); });
 
-// Make search icon tap-to-focus on mobile
 document.querySelector('.search-icon').addEventListener('click', () => searchInput.focus());
 
 document.querySelectorAll('.filter-pill').forEach(pill => {
@@ -990,13 +1202,6 @@ modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) clo
 playerClose.addEventListener('click', closePlayer);
 playerOverlay.addEventListener('click', e => { if (e.target === playerOverlay) closePlayer(); });
 
-playerFullscreen.addEventListener('click', () => {
-  const box = document.querySelector('.player-wrap');
-  if (box.requestFullscreen) box.requestFullscreen();
-  else if (box.webkitRequestFullscreen) box.webkitRequestFullscreen();
-});
-
-// Season/episode selectors
 seasonSelect.addEventListener('change', async () => {
   currentSeason  = parseInt(seasonSelect.value);
   currentEpisode = 1;
@@ -1011,7 +1216,6 @@ episodeSelect.addEventListener('change', () => {
   location.hash = `#play/${currentItem.id}/${currentSeason}/${currentEpisode}`;
 });
 
-// Build server panel
 const serverGrid = document.getElementById('serverGrid');
 const serverPanel = document.getElementById('serverPanel');
 const serverPanelBtn = document.getElementById('serverPanelBtn');
@@ -1048,10 +1252,7 @@ SOURCES.forEach((src, i) => {
   serverGrid.appendChild(card);
 });
 
-serverPanelBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  serverPanel.classList.contains('hidden') ? openServerPanel() : closeServerPanel();
-});
+serverGrid?.addEventListener && null; // serverPanelBtn removed
 
 document.addEventListener('click', e => {
   if (!e.target.closest('#serverPanel') && !e.target.closest('#serverPanelBtn')) {
@@ -1066,7 +1267,11 @@ document.addEventListener('keydown', e => {
 });
 hamburger.addEventListener('click', () => navLinks.classList.toggle('open'));
 
-// Mobile bottom nav
+watchlistHeart.addEventListener('click', () => {
+  document.querySelectorAll('.nav-center a').forEach(l => l.classList.remove('active'));
+  showWatchlistPage();
+});
+
 const bottomNav = document.getElementById('bottomNav');
 function initBottomNav() {
   if (window.innerWidth <= 480) bottomNav.style.display = 'flex';
@@ -1087,31 +1292,59 @@ bottomNav.querySelectorAll('.bottom-nav-item').forEach(btn => {
   });
 });
 
-// Save progress when tab is closed/refreshed
 window.addEventListener('beforeunload', () => { if (currentItem) saveProgress(); });
 
-/* ── DRAG SCROLL ROWS ── */
-document.querySelectorAll('.row').forEach(row => {
-  let isDown = false, startX, scrollLeft;
-  row.addEventListener('mousedown', e => {
-    isDown = true; row.classList.add('dragging');
-    startX = e.pageX - row.offsetLeft; scrollLeft = row.scrollLeft;
+function applyDragScroll(el) {
+  let isDown = false, startX, scrollLeft, hasDragged = false;
+
+  el.addEventListener('mousedown', e => {
+    isDown = true;
+    hasDragged = false;
+    el.classList.add('dragging');
+    startX = e.pageX - el.offsetLeft;
+    scrollLeft = el.scrollLeft;
+    e.preventDefault();
   });
-  row.addEventListener('mouseleave', () => { isDown = false; row.classList.remove('dragging'); });
-  row.addEventListener('mouseup', () => { isDown = false; row.classList.remove('dragging'); });
-  row.addEventListener('mousemove', e => {
+
+  el.addEventListener('mouseleave', () => {
+    isDown = false;
+    el.classList.remove('dragging');
+  });
+
+  el.addEventListener('mouseup', () => {
+    isDown = false;
+    el.classList.remove('dragging');
+    if (hasDragged) {
+      setTimeout(() => { hasDragged = false; }, 100);
+    }
+  });
+
+  el.addEventListener('mousemove', e => {
     if (!isDown) return;
     e.preventDefault();
-    row.scrollLeft = scrollLeft - (e.pageX - row.offsetLeft - startX);
+    const x = e.pageX - el.offsetLeft;
+    const walk = x - startX;
+    if (Math.abs(walk) > 5) hasDragged = true;
+    el.scrollLeft = Math.max(0, scrollLeft - walk);
   });
-});
 
-/* ── AUTOPLAY ── */
+  el.addEventListener('click', e => {
+    if (hasDragged) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+}
+
+document.querySelectorAll('.row').forEach(applyDragScroll);
+
+const recommendationsGrid = document.getElementById('recommendationsGrid');
+if (recommendationsGrid) applyDragScroll(recommendationsGrid);
+
 let autoplayTimer = null;
 const AUTOPLAY_SECS = 10;
 const RING_CIRC = 94.2; // 2π×15
 
-/* ── NEXT EPISODE BUTTON ── */
 async function goNextEpisode() {
   const totalEps     = episodeSelect.options.length;
   const totalSeasons = seasonSelect.options.length;
@@ -1136,13 +1369,522 @@ async function goNextEpisode() {
 }
 
 function updateNextBtn() {
-  if (!currentItem || currentItem.type !== 'show') { epNextBtn.classList.add('hidden'); return; }
+  if (!currentItem || currentItem.type !== 'show') {
+
+    return;
+  }
   const totalEps     = episodeSelect.options.length;
   const totalSeasons = seasonSelect.options.length;
   const hasNext = (currentEpisode + 1 <= totalEps) || (currentSeason + 1 <= totalSeasons);
-  epNextBtn.classList.toggle('hidden', !hasNext);
+
 }
 
-epNextBtn.addEventListener('click', goNextEpisode);
-
 init();
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.row-arrow')) {
+    const btn = e.target.closest('.row-arrow');
+    const filter = btn.dataset.filter;
+    const genre = btn.dataset.genre || '';
+    const label = btn.dataset.label || '';
+    const genreLabel = btn.dataset.genreLabel || '';
+
+    if (filter === 'trending') {
+      handleFilter('trending', 'Trending This Week');
+    } else if (filter === 'top_rated_movies') {
+      handleFilter('top_rated_movies', 'Top Rated Movies');
+    } else if (genre) {
+
+      handleFilter(filter, label, genre, genreLabel);
+    } else {
+
+      handleFilter(filter, label);
+    }
+  }
+});
+
+const diceBtn = document.getElementById('diceBtn');
+const luckyOverlay = document.getElementById('luckyOverlay');
+const luckyClose = document.getElementById('luckyClose');
+
+function openLuckyModal() {
+  luckyOverlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLuckyModal() {
+  luckyOverlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function getRandomItem(type = 'any') {
+  let pool = [];
+
+  console.log('allCache contents:', Object.keys(allCache));
+  
+  if (type === 'movie') {
+
+    pool = [
+      ...(allCache.movies || []),
+      ...(allCache.nowPlaying || []),
+      ...(allCache.topMovies || []),
+      ...(allCache.actionMovies || []),
+      ...(allCache.comedyMovies || []),
+      ...(allCache.horrorMovies || []),
+      ...(allCache.scifiMovies || [])
+    ].filter(item => item && item.type === 'movie');
+  } else if (type === 'show') {
+
+    pool = [
+      ...(allCache.shows || []),
+      ...(allCache.topShows || []),
+      ...(allCache.dramaShows || []),
+      ...(allCache.comedyShows || []),
+      ...(allCache.crimeShows || [])
+    ].filter(item => item && item.type === 'show');
+  } else {
+
+    pool = [
+      ...(allCache.trending || []),
+      ...(allCache.movies || []),
+      ...(allCache.shows || []),
+      ...(allCache.nowPlaying || []),
+      ...(allCache.topShows || [])
+    ].filter(item => item);
+  }
+
+  const uniquePool = pool.filter((item, index, self) => 
+    index === self.findIndex(i => i.id === item.id)
+  );
+  
+  console.log(`Pool for type "${type}":`, uniquePool.length, 'items');
+  
+  if (uniquePool.length === 0) {
+    console.log('No items found in pool');
+    return null;
+  }
+  
+  const randomItem = uniquePool[Math.floor(Math.random() * uniquePool.length)];
+  console.log('Selected random item:', randomItem);
+  return randomItem;
+}
+
+async function feelingLucky(type) {
+  closeLuckyModal();
+
+  showToast('Finding something awesome...');
+
+  setTimeout(() => {
+    try {
+      let randomItem = getRandomItem(type);
+
+      if (!randomItem && type !== 'any') {
+        console.log(`No ${type} found, trying any type...`);
+        randomItem = getRandomItem('any');
+      }
+
+      if (!randomItem) {
+        console.log('No cached items, trying to get from DOM...');
+        const cards = document.querySelectorAll('.card');
+        if (cards.length > 0) {
+          const randomCard = cards[Math.floor(Math.random() * cards.length)];
+          const cardTitle = randomCard.querySelector('.card-title')?.textContent;
+          if (cardTitle) {
+            randomCard.click(); // Simulate clicking the card
+            return;
+          }
+        }
+      }
+      
+      if (randomItem) {
+        console.log('Opening modal for:', randomItem.title);
+
+        openModal(randomItem.id);
+      } else {
+        console.log('No content found anywhere');
+        showToast('Oops! No content available. Try refreshing the page.');
+      }
+    } catch (error) {
+      console.error('Error in feelingLucky:', error);
+      showToast('Something went wrong. Please try again.');
+    }
+  }, 800);
+}
+
+diceBtn.addEventListener('click', openLuckyModal);
+
+const themeToggle = document.getElementById('themeToggle');
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'light') document.body.classList.add('light-mode');
+
+themeToggle.addEventListener('click', () => {
+  document.body.classList.toggle('light-mode');
+  localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+});
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+luckyClose.addEventListener('click', closeLuckyModal);
+
+luckyOverlay.addEventListener('click', (e) => {
+  if (e.target === luckyOverlay) {
+    closeLuckyModal();
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.lucky-btn')) {
+    const btn = e.target.closest('.lucky-btn');
+    const type = btn.dataset.type;
+    feelingLucky(type);
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !luckyOverlay.classList.contains('hidden')) {
+    closeLuckyModal();
+  }
+});
+
+let modalStartY = 0;
+let modalCurrentY = 0;
+let modalIsDragging = false;
+let modalInitialTransform = 0;
+
+function initModalSwipe() {
+  const modal = document.querySelector('.modal');
+  const dragHandle = document.querySelector('.modal-drag-handle');
+  
+  if (!modal || !dragHandle) return;
+
+  dragHandle.addEventListener('touchstart', handleModalTouchStart, { passive: false });
+  modal.addEventListener('touchstart', handleModalTouchStart, { passive: false });
+  document.addEventListener('touchmove', handleModalTouchMove, { passive: false });
+  document.addEventListener('touchend', handleModalTouchEnd);
+
+  dragHandle.addEventListener('mousedown', handleModalMouseStart);
+  modal.addEventListener('mousedown', handleModalMouseStart);
+  document.addEventListener('mousemove', handleModalMouseMove);
+  document.addEventListener('mouseup', handleModalMouseEnd);
+}
+
+function handleModalTouchStart(e) {
+  if (window.innerWidth > 540) return; // Only on mobile
+  
+  modalStartY = e.touches[0].clientY;
+  modalIsDragging = true;
+  modalInitialTransform = 0;
+  
+  const modal = document.querySelector('.modal');
+  modal.style.transition = 'none';
+}
+
+function handleModalMouseStart(e) {
+  if (window.innerWidth > 540) return; // Only on mobile
+  
+  modalStartY = e.clientY;
+  modalIsDragging = true;
+  modalInitialTransform = 0;
+  
+  const modal = document.querySelector('.modal');
+  modal.style.transition = 'none';
+  e.preventDefault();
+}
+
+function handleModalTouchMove(e) {
+  if (!modalIsDragging || window.innerWidth > 540) return;
+  
+  modalCurrentY = e.touches[0].clientY;
+  const deltaY = modalCurrentY - modalStartY;
+
+  if (deltaY > 0) {
+    const modal = document.querySelector('.modal');
+    modal.style.transform = `translateY(${deltaY}px)`;
+
+    const overlay = document.querySelector('.modal-overlay');
+    const opacity = Math.max(0.3, 1 - (deltaY / 300));
+    overlay.style.background = `rgba(0,0,0,${0.88 * opacity})`;
+  }
+}
+
+function handleModalMouseMove(e) {
+  if (!modalIsDragging || window.innerWidth > 540) return;
+  
+  modalCurrentY = e.clientY;
+  const deltaY = modalCurrentY - modalStartY;
+
+  if (deltaY > 0) {
+    const modal = document.querySelector('.modal');
+    modal.style.transform = `translateY(${deltaY}px)`;
+
+    const overlay = document.querySelector('.modal-overlay');
+    const opacity = Math.max(0.3, 1 - (deltaY / 300));
+    overlay.style.background = `rgba(0,0,0,${0.88 * opacity})`;
+  }
+}
+
+function handleModalTouchEnd(e) {
+  if (!modalIsDragging || window.innerWidth > 540) return;
+  
+  const deltaY = modalCurrentY - modalStartY;
+  const modal = document.querySelector('.modal');
+  const overlay = document.querySelector('.modal-overlay');
+  
+  modal.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+  overlay.style.transition = 'background 0.3s ease';
+
+  if (deltaY > 100) {
+    modal.style.transform = 'translateY(100%)';
+    overlay.style.background = 'rgba(0,0,0,0)';
+    setTimeout(() => {
+      closeModal();
+
+      modal.style.transform = '';
+      modal.style.transition = '';
+      overlay.style.background = '';
+      overlay.style.transition = '';
+    }, 300);
+  } else {
+
+    modal.style.transform = 'translateY(0)';
+    overlay.style.background = 'rgba(0,0,0,0.88)';
+    setTimeout(() => {
+      modal.style.transition = '';
+      overlay.style.transition = '';
+    }, 300);
+  }
+  
+  modalIsDragging = false;
+}
+
+function handleModalMouseEnd(e) {
+  handleModalTouchEnd(e);
+}
+
+const originalOpenModal = window.openModal;
+if (typeof originalOpenModal === 'function') {
+  window.openModal = function(...args) {
+    originalOpenModal.apply(this, args);
+    setTimeout(initModalSwipe, 100); // Small delay to ensure modal is rendered
+  };
+} else {
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const modalOverlay = document.getElementById('modalOverlay');
+    if (modalOverlay) {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+            if (!modalOverlay.classList.contains('hidden')) {
+              setTimeout(initModalSwipe, 100);
+            }
+          }
+        });
+      });
+      observer.observe(modalOverlay, { attributes: true });
+    }
+  });
+}
+
+function showGenreBrowser() {
+  homeRows.classList.add('hidden');
+  heroSection.classList.add('hidden');
+  searchSection.classList.add('hidden');
+  filteredSection.classList.add('hidden');
+  watchlistSection.classList.add('hidden');
+  genreBrowserSection.classList.remove('hidden');
+
+  ['searchLoadMore','filteredLoadMore'].forEach(id => {
+    clearInfiniteScroll(id);
+  });
+  
+  setHash('#browse/genres');
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.genre-card')) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const card = e.target.closest('.genre-card');
+    const type = card.dataset.type;
+    const genreId = card.dataset.genre;
+    const genreName = card.dataset.name;
+
+    card.style.transform = 'translateY(-2px) scale(0.98)';
+    setTimeout(() => {
+      card.style.transform = '';
+    }, 150);
+
+    setTimeout(() => {
+      handleFilter(type, `${genreName} ${type === 'movie' ? 'Movies' : 'TV Shows'}`, genreId, genreName);
+    }, 100);
+  }
+});
+
+const logoBtn = document.getElementById('logoBtn');
+
+logoBtn.addEventListener('click', () => {
+
+  if (window.location.hash === '#home' || window.location.hash === '' || window.location.hash === '#') {
+    window.location.reload();
+  } else {
+
+    showHome();
+  }
+});
+
+function setupNewPlayer(item) {
+
+  const posterImg = document.getElementById('playerPoster');
+  const movieTitle = document.getElementById('playerMovieTitle');
+  const movieMeta = document.getElementById('playerMovieMeta');
+  const movieDesc = document.getElementById('playerMovieDesc');
+  const movieGenres = document.getElementById('playerMovieGenres');
+  const watchlistBtn = document.getElementById('playerWatchlistBtn');
+  const trailerBtn = document.getElementById('playerTrailerBtn');
+  
+  posterImg.src = item.thumb || 'https://placehold.co/342x513/13131a/888?text=No+Image';
+  movieTitle.textContent = item.title;
+  
+  movieMeta.innerHTML = `
+    <span class="score">★ ${item.score}</span>
+    <span>${item.year}</span>
+    ${item.rating ? `<span class="rating-badge">${item.rating}</span>` : ''}
+    ${item.duration ? `<span>${item.duration}</span>` : ''}
+    <span class="type-badge">${item.type === 'show' ? 'TV Show' : 'Movie'}</span>
+  `;
+  
+  movieDesc.textContent = item.description || 'No description available.';
+  
+  movieGenres.innerHTML = item.genre.map(g => `<span class="genre-tag">${g}</span>`).join('');
+
+  const inWL = watchlist.includes(item.id);
+  watchlistBtn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+    </svg>
+    ${inWL ? 'In Watchlist' : 'Add to Watchlist'}
+  `;
+  watchlistBtn.onclick = () => toggleWatchlist(item.id, watchlistBtn);
+
+  if (item.trailerKey) {
+    trailerBtn.style.display = 'flex';
+    trailerBtn.onclick = () => openTrailer(item.trailerKey);
+  } else {
+    trailerBtn.style.display = 'none';
+  }
+
+  setupServerList();
+}
+
+function setupServerList() {
+  const serverList = document.getElementById('serverList');
+  if (!serverList) return;
+  serverList.innerHTML = '';
+  
+  SOURCES.forEach((src, index) => {
+    const serverItem = document.createElement('button');
+    serverItem.className = `server-item ${index === currentSourceIdx ? 'active' : ''}`;
+    serverItem.textContent = `${src.label} ${src.tag}`;
+    serverItem.onclick = () => {
+      currentSourceIdx = index;
+      loadSource();
+      setupServerList(); // Refresh to update active state
+    };
+    serverList.appendChild(serverItem);
+  });
+}
+
+async function setupEpisodeSection(item) {
+  const episodeSection = document.getElementById('episodeSection');
+  const seasonSelect = document.getElementById('seasonSelect');
+  const episodeSelect = document.getElementById('episodeSelect');
+  const episodeGrid = document.getElementById('episodeGrid');
+  
+  episodeSection.classList.remove('hidden');
+
+  seasonSelect.innerHTML = '';
+  for (let s = 1; s <= (item.seasons || 5); s++) {
+    const option = document.createElement('option');
+    option.value = s;
+    option.textContent = `Season ${s}`;
+    option.selected = s === currentSeason;
+    seasonSelect.appendChild(option);
+  }
+  
+  seasonSelect.onchange = async () => {
+    currentSeason = parseInt(seasonSelect.value);
+    currentEpisode = 1;
+    await loadEpisodes(item.tmdbId, currentSeason);
+    setupEpisodeGrid();
+    loadSource();
+  };
+
+  await loadEpisodes(item.tmdbId, currentSeason);
+  setupEpisodeGrid();
+}
+
+function setupEpisodeGrid() {
+  const episodeGrid = document.getElementById('episodeGrid');
+  const episodeData = window.currentEpisodeData || [];
+  
+  episodeGrid.innerHTML = '';
+  
+  const numEps = episodeData.length || episodeSelect.options.length || 1;
+  
+  for (let e = 1; e <= numEps; e++) {
+    const episode = episodeData[e - 1];
+    const episodeCard = document.createElement('div');
+    episodeCard.className = `episode-card ${e === currentEpisode ? 'active' : ''}`;
+    episodeCard.onclick = () => {
+      currentEpisode = e;
+      episodeSelect.value = e;
+      loadSource();
+      setupEpisodeGrid(); // Refresh active state
+    };
+    
+    episodeCard.innerHTML = `
+      <div class="episode-number">Episode ${e}</div>
+      <div class="episode-title">${episode?.name || `Episode ${e}`}</div>
+      <div class="episode-overview">${episode?.overview || 'No description available.'}</div>
+    `;
+    
+    episodeGrid.appendChild(episodeCard);
+  }
+
+  const activeCard = episodeGrid.querySelector('.episode-card.active');
+  if (activeCard) activeCard.scrollIntoView({ block: 'nearest' });
+
+}
+
+async function setupRecommendations(item) {
+  const recommendationsGrid = document.getElementById('recommendationsGrid');
+  recommendationsGrid.innerHTML = '<div class="row-loader">Loading recommendations...</div>';
+  
+  try {
+
+    const genre = item.genre[0];
+    const genreId = Object.keys(GENRE_MAP).find(key => GENRE_MAP[key] === genre);
+    
+    let recommendations = [];
+    if (genreId) {
+      recommendations = await fetchByGenre(item.type, 1, genreId);
+    } else {
+
+      recommendations = await fetchTrending();
+    }
+
+    recommendations = recommendations
+      .filter(rec => rec.id !== item.id)
+      .slice(0, 12);
+    
+    recommendationsGrid.innerHTML = '';
+    recommendations.forEach(rec => {
+      recommendationsGrid.appendChild(createCard(rec));
+    });
+    
+  } catch (error) {
+    recommendationsGrid.innerHTML = '<p class="empty-msg">Failed to load recommendations.</p>';
+  }
+}
