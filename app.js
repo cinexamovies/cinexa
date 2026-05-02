@@ -806,12 +806,12 @@ async function loadMoreSearch() {
   searchPage++;
   try {
     const results = await searchTMDB(lastQuery, searchPage);
+    if (!results.length) { clearInfiniteScroll('searchLoadMore'); return; }
     allSearchResults = [...allSearchResults, ...results];
     allCache.search  = allSearchResults;
     applySearchTypeFilter();
     updateLoadMoreBtn('searchLoadMore', results.length, searchGrid, loadMoreSearch);
   } catch (error) {
-
     clearInfiniteScroll('searchLoadMore');
   }
 }
@@ -879,49 +879,37 @@ async function loadMoreFiltered() {
   filteredPage++;
   try {
     const items = await getFilteredItems(currentFilterKey, filteredPage, currentGenreId);
+    if (!items.length) { clearInfiniteScroll('filteredLoadMore'); return; }
     allCache.filtered = [...(allCache.filtered || []), ...items];
     renderGrid(filteredGrid, items, true);
     updateLoadMoreBtn('filteredLoadMore', items.length, filteredGrid, loadMoreFiltered);
   } catch (error) {
-
     clearInfiniteScroll('filteredLoadMore');
   }
 }
 
 async function getFilteredItems(filter, page, genreId = '') {
-  console.log(`getFilteredItems called with: filter=${filter}, page=${page}, genreId=${genreId}`);
-  
-  if (filter === 'trending')        return page === 1 ? (allCache.trending || await fetchTrending()) : [];
-  if (filter === 'movie')           return await fetchByGenre('movie', page, genreId);
-  if (filter === 'show')            return await fetchByGenre('tv', page, genreId);
-  if (filter === 'new')             return await fetchNowPlaying();
-  if (filter === 'browse')          return page === 1 ? (allCache.trending || await fetchTrending()) : [];
-  if (filter === 'browse_genres')   return []; // Special case - shows genre browser
-  if (filter === 'top_rated')       return await fetchByGenre('tv', page, ''); // TV shows only for top rated
+  if (filter === 'trending')         return page === 1 ? (allCache.trending || await fetchTrending()) : [];
+  if (filter === 'movie')            return await fetchByGenre('movie', page, genreId);
+  if (filter === 'show')             return await fetchByGenre('show', page, genreId);
+  if (filter === 'new')              return page === 1 ? await fetchNowPlaying() : [];
+  if (filter === 'browse')           return page === 1 ? (allCache.trending || await fetchTrending()) : [];
+  if (filter === 'browse_genres')    return [];
+  if (filter === 'top_rated')        return await fetchTopRatedShows(page);
   if (filter === 'top_rated_movies') return await fetchTopRatedMovies(page);
-  if (filter === 'collections')     return await fetchByGenre('movie', page, '');
-  if (filter === 'countries')       return await fetchByGenre('movie', page, '');
-  if (filter === 'networks')        return await fetchByGenre('tv', page, '');
-  if (filter === 'movies_2026')     return await fetchMovies2026(page);
-  if (filter === 'now_playing')     return await fetchNowPlaying();
-  if (filter === 'upcoming')        return await fetchUpcoming(page);
-  if (filter === 'airing_today')    return await fetchAiringToday(page);
+  if (filter === 'collections')      return await fetchByGenre('movie', page, '');
+  if (filter === 'countries')        return await fetchByGenre('movie', page, '');
+  if (filter === 'networks')         return await fetchByGenre('show', page, '');
+  if (filter === 'movies_2026')      return await fetchMovies2026(page);
+  if (filter === 'now_playing')      return page === 1 ? await fetchNowPlaying() : [];
+  if (filter === 'upcoming')         return await fetchUpcoming(page);
+  if (filter === 'airing_today')     return await fetchAiringToday(page);
   return [];
 }
 
 function updateLoadMoreBtn(btnId, resultCount, container, handler) {
-
-  let btn = document.getElementById(btnId);
-  if (btn) {
-    btn.remove();
-  }
-
   clearInfiniteScroll(btnId);
-
   if (resultCount >= 20) {
-    setupInfiniteScroll(container, handler, btnId);
-  } else if (resultCount > 0) {
-
     setupInfiniteScroll(container, handler, btnId);
   }
 }
@@ -1222,37 +1210,37 @@ const serverPanelBtn = document.getElementById('serverPanelBtn');
 const serverBackdrop = document.getElementById('serverBackdrop');
 
 function openServerPanel() {
-  serverPanel.classList.remove('hidden');
-  serverBackdrop.classList.remove('hidden');
+  serverPanel?.classList.remove('hidden');
+  serverBackdrop?.classList.remove('hidden');
 }
 function closeServerPanel() {
-  serverPanel.classList.add('hidden');
-  serverBackdrop.classList.add('hidden');
+  serverPanel?.classList.add('hidden');
+  serverBackdrop?.classList.add('hidden');
 }
 
-SOURCES.forEach((src, i) => {
-  const card = document.createElement('button');
-  card.className = 'server-card' + (i === 0 ? ' active-server' : '');
-  card.dataset.idx = i;
-  card.innerHTML = `
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/>
-      <line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
-    </svg>
-    <span class="server-card-name">${src.label}</span>
-    <span class="server-card-tag">${src.tag}</span>
-  `;
-  card.addEventListener('click', () => {
-    currentSourceIdx = i;
-    loadSource();
-    document.querySelectorAll('.server-card').forEach(c => c.classList.remove('active-server'));
-    card.classList.add('active-server');
-    closeServerPanel();
+if (serverGrid) {
+  SOURCES.forEach((src, i) => {
+    const card = document.createElement('button');
+    card.className = 'server-card' + (i === 0 ? ' active-server' : '');
+    card.dataset.idx = i;
+    card.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/>
+        <line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
+      </svg>
+      <span class="server-card-name">${src.label}</span>
+      <span class="server-card-tag">${src.tag}</span>
+    `;
+    card.addEventListener('click', () => {
+      currentSourceIdx = i;
+      loadSource();
+      document.querySelectorAll('.server-card').forEach(c => c.classList.remove('active-server'));
+      card.classList.add('active-server');
+      closeServerPanel();
+    });
+    serverGrid.appendChild(card);
   });
-  serverGrid.appendChild(card);
-});
-
-serverGrid?.addEventListener && null; // serverPanelBtn removed
+}
 
 document.addEventListener('click', e => {
   if (!e.target.closest('#serverPanel') && !e.target.closest('#serverPanelBtn')) {
@@ -1260,7 +1248,7 @@ document.addEventListener('click', e => {
   }
 });
 
-serverBackdrop.addEventListener('click', closeServerPanel);
+if (serverBackdrop) serverBackdrop.addEventListener('click', closeServerPanel);
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeModal(); closePlayer(); }
@@ -1887,4 +1875,693 @@ async function setupRecommendations(item) {
   } catch (error) {
     recommendationsGrid.innerHTML = '<p class="empty-msg">Failed to load recommendations.</p>';
   }
+}
+
+
+/* ── GAMES HUB ── */
+(function() {
+  const gameTrigger   = document.getElementById('gameTrigger');
+  const gamesHub      = document.getElementById('gamesHub');
+  const gamesHubClose = document.getElementById('gamesHubClose');
+
+  gameTrigger.addEventListener('click', () => gamesHub.classList.remove('hidden'));
+  gamesHubClose.addEventListener('click', () => gamesHub.classList.add('hidden'));
+  gamesHub.addEventListener('click', e => { if (e.target === gamesHub) gamesHub.classList.add('hidden'); });
+
+  const games = { openSnake: startSnake, openMines: startMines, openTetris: startTetris, openPong: startPong, openBreakout: startBreakout, openTrivia: startTrivia };
+  Object.entries(games).forEach(([id, fn]) => {
+    document.getElementById(id).addEventListener('click', () => { gamesHub.classList.add('hidden'); fn(); });
+  });
+})();
+
+/* ── SNAKE GAME ── */
+function startSnake() {
+  (function() {
+    const GRID = 16;
+    const CELL = 20;
+    const SPEEDS = { slow: 180, normal: 120, fast: 65 };
+    const COLORS = { bg: '#0f0f17', grid: '#16161f', snake: '#e50914', head: '#ff4455', apple: '#4ade80' };
+
+    const overlay   = document.getElementById('snakeOverlay');
+    const closeBtn  = document.getElementById('snakeClose');
+    const canvas    = document.getElementById('snakeCanvas');
+    const scoreEl   = document.getElementById('snakeScore');
+    const bestEl    = document.getElementById('snakeBest');
+    const msgEl     = document.getElementById('snakeMsg');
+    const speedBtns = document.querySelectorAll('#snakeSpeeds .mines-diff-btn');
+    const ctx       = canvas.getContext('2d');
+
+    let snake, dir, apple, score, loop, running;
+    let inputQueue = [];
+    let speed = 'slow';
+    let best = parseInt(localStorage.getItem('snakeBest') || '0');
+    bestEl.textContent = best;
+
+    speedBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        speedBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        speed = btn.dataset.speed;
+        clearInterval(loop);
+        running = false;
+        reset();
+      });
+    });
+
+    function rand(n) { return Math.floor(Math.random() * n); }
+    function spawnApple() {
+      let pos;
+      do { pos = { x: rand(GRID), y: rand(GRID) }; }
+      while (snake.some(s => s.x === pos.x && s.y === pos.y));
+      return pos;
+    }
+
+    function reset() {
+      const mid = Math.floor(GRID / 2);
+      snake = [{ x: mid, y: mid }, { x: mid-1, y: mid }, { x: mid-2, y: mid }];
+      dir = { x: 1, y: 0 };
+      apple = spawnApple();
+      score = 0; running = false; inputQueue = [];
+      scoreEl.textContent = 0;
+      msgEl.textContent = 'Press any arrow key to start';
+      draw();
+    }
+
+    function draw() {
+      ctx.fillStyle = COLORS.bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = COLORS.grid; ctx.lineWidth = 0.5;
+      for (let i = 0; i <= GRID; i++) {
+        ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,GRID*CELL); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(GRID*CELL,i*CELL); ctx.stroke();
+      }
+      snake.forEach((seg, i) => {
+        ctx.fillStyle = i === 0 ? COLORS.head : COLORS.snake;
+        ctx.beginPath(); ctx.roundRect(seg.x*CELL+1, seg.y*CELL+1, CELL-2, CELL-2, 3); ctx.fill();
+      });
+      ctx.fillStyle = COLORS.apple;
+      ctx.beginPath(); ctx.arc(apple.x*CELL+CELL/2, apple.y*CELL+CELL/2, CELL/2-2, 0, Math.PI*2); ctx.fill();
+    }
+
+    function step() {
+      if (inputQueue.length) {
+        const c = inputQueue.shift();
+        if (c.x !== -dir.x || c.y !== -dir.y) dir = c;
+      }
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+      if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID || snake.some(s => s.x===head.x && s.y===head.y)) {
+        running = false; clearInterval(loop);
+        if (score > best) { best = score; localStorage.setItem('snakeBest', best); bestEl.textContent = best; }
+        msgEl.textContent = `Game over! Score: ${score} — press arrow to restart`;
+        return;
+      }
+      snake.unshift(head);
+      if (head.x === apple.x && head.y === apple.y) { score++; scoreEl.textContent = score; apple = spawnApple(); }
+      else snake.pop();
+      draw();
+    }
+
+    function start() {
+      if (running) return;
+      reset(); running = true; msgEl.textContent = '';
+      loop = setInterval(step, SPEEDS[speed]);
+    }
+
+    function onKey(e) {
+      if (overlay.classList.contains('hidden')) return;
+      const map = { ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1}, ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0} };
+      if (map[e.key]) {
+        e.preventDefault();
+        const d = map[e.key];
+        const last = inputQueue.length ? inputQueue[inputQueue.length-1] : dir;
+        if ((d.x !== -last.x || d.y !== -last.y) && (d.x !== last.x || d.y !== last.y))
+          if (inputQueue.length < 3) inputQueue.push(d);
+        if (!running) start();
+      }
+    }
+
+    function close() {
+      overlay.classList.add('hidden');
+      clearInterval(loop); running = false;
+      document.removeEventListener('keydown', onKey);
+    }
+
+    document.addEventListener('keydown', onKey);
+    closeBtn.onclick = close;
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.classList.remove('hidden');
+    reset();
+  })();
+}
+
+/* ── MINESWEEPER ── */
+function startMines() {
+  (function() {
+    const DIFFS = {
+      easy:   { rows: 9,  cols: 9,  mines: 10 },
+      medium: { rows: 12, cols: 12, mines: 25 },
+      hard:   { rows: 14, cols: 14, mines: 40 },
+    };
+
+    const overlay   = document.getElementById('minesOverlay');
+    const closeBtn  = document.getElementById('minesClose');
+    const gridEl    = document.getElementById('minesGrid');
+    const leftEl    = document.getElementById('minesLeft');
+    const timeEl    = document.getElementById('minesTime');
+    const msgEl     = document.getElementById('minesMsg');
+    const diffBtns  = document.querySelectorAll('.mines-diff-btn');
+
+    let board, rows, cols, mineCount, flagCount, revealed, gameOver, started, timerLoop, elapsed, diff = 'easy';
+
+    function newGame() {
+      const d = DIFFS[diff];
+      rows = d.rows; cols = d.cols; mineCount = d.mines;
+      flagCount = 0; revealed = 0; gameOver = false; started = false; elapsed = 0;
+      clearInterval(timerLoop);
+      leftEl.textContent = mineCount;
+      timeEl.textContent = 0;
+      msgEl.textContent = 'Click to reveal · Right-click to flag';
+      board = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ mine: false, revealed: false, flagged: false, n: 0 })));
+      gridEl.style.gridTemplateColumns = `repeat(${cols}, 28px)`;
+      render();
+    }
+
+    function placeMines(safeR, safeC) {
+      let placed = 0;
+      while (placed < mineCount) {
+        const r = Math.floor(Math.random() * rows);
+        const c = Math.floor(Math.random() * cols);
+        if (!board[r][c].mine && !(r === safeR && c === safeC)) {
+          board[r][c].mine = true; placed++;
+        }
+      }
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++)
+          if (!board[r][c].mine)
+            board[r][c].n = neighbors(r, c).filter(([nr,nc]) => board[nr][nc].mine).length;
+    }
+
+    function neighbors(r, c) {
+      const res = [];
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++)
+          if ((dr||dc) && r+dr>=0 && r+dr<rows && c+dc>=0 && c+dc<cols)
+            res.push([r+dr, c+dc]);
+      return res;
+    }
+
+    function reveal(r, c) {
+      const cell = board[r][c];
+      if (cell.revealed || cell.flagged) return;
+      cell.revealed = true; revealed++;
+      if (cell.n === 0 && !cell.mine)
+        neighbors(r, c).forEach(([nr,nc]) => reveal(nr, nc));
+    }
+
+    function render() {
+      gridEl.innerHTML = '';
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = board[r][c];
+          const el = document.createElement('button');
+          el.className = 'mines-cell';
+          if (cell.revealed) {
+            el.classList.add('revealed');
+            if (cell.mine) { el.classList.add('mine-hit'); el.textContent = '💣'; }
+            else if (cell.n > 0) { el.textContent = cell.n; el.dataset.n = cell.n; }
+          } else if (cell.flagged) {
+            el.classList.add('flagged'); el.textContent = '🚩';
+          }
+          el.addEventListener('click', () => onClick(r, c));
+          el.addEventListener('contextmenu', e => { e.preventDefault(); onFlag(r, c); });
+          gridEl.appendChild(el);
+        }
+      }
+    }
+
+    function onClick(r, c) {
+      if (gameOver || board[r][c].flagged || board[r][c].revealed) return;
+      if (!started) {
+        started = true;
+        placeMines(r, c);
+        timerLoop = setInterval(() => { elapsed++; timeEl.textContent = elapsed; }, 1000);
+      }
+      if (board[r][c].mine) {
+        board[r][c].revealed = true;
+        gameOver = true; clearInterval(timerLoop);
+        board.forEach(row => row.forEach(cell => { if (cell.mine) cell.revealed = true; }));
+        render();
+        msgEl.textContent = '💥 Boom! Right-click a diff to restart';
+        return;
+      }
+      reveal(r, c);
+      if (revealed === rows * cols - mineCount) {
+        gameOver = true; clearInterval(timerLoop);
+        msgEl.textContent = `🎉 You win! ${elapsed}s`;
+      }
+      render();
+    }
+
+    function onFlag(r, c) {
+      if (gameOver || board[r][c].revealed) return;
+      board[r][c].flagged = !board[r][c].flagged;
+      flagCount += board[r][c].flagged ? 1 : -1;
+      leftEl.textContent = mineCount - flagCount;
+      render();
+    }
+
+    diffBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        diffBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        diff = btn.dataset.diff;
+        newGame();
+      });
+    });
+
+    function close() {
+      overlay.classList.add('hidden');
+      clearInterval(timerLoop);
+    }
+
+    closeBtn.onclick = close;
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.classList.remove('hidden');
+    newGame();
+  })();
+}
+
+/* ── TETRIS ── */
+function startTetris() {
+  (function() {
+    const COLS = 10, ROWS = 20, CELL = 20;
+    const COLORS = ['#e50914','#ff6b35','#f5c518','#4ade80','#60a5fa','#818cf8','#e879f9'];
+    const PIECES = [
+      [[1,1,1,1]],
+      [[1,1],[1,1]],
+      [[0,1,0],[1,1,1]],
+      [[1,0,0],[1,1,1]],
+      [[0,0,1],[1,1,1]],
+      [[0,1,1],[1,1,0]],
+      [[1,1,0],[0,1,1]],
+    ];
+
+    const overlay  = document.getElementById('tetrisOverlay');
+    const closeBtn = document.getElementById('tetrisClose');
+    const canvas   = document.getElementById('tetrisCanvas');
+    const nextCvs  = document.getElementById('tetrisNext');
+    const scoreEl  = document.getElementById('tetrisScore');
+    const linesEl  = document.getElementById('tetrisLines');
+    const levelEl  = document.getElementById('tetrisLevel');
+    const msgEl    = document.getElementById('tetrisMsg');
+    const ctx      = canvas.getContext('2d');
+    const nctx     = nextCvs.getContext('2d');
+
+    let board, piece, next, score, lines, level, loop, running, colorIdx, nextColorIdx;
+
+    function newPiece(shape, ci) {
+      return { shape, ci, x: Math.floor(COLS/2) - Math.floor(shape[0].length/2), y: 0 };
+    }
+
+    function randPiece() {
+      const i = Math.floor(Math.random() * PIECES.length);
+      const ci = Math.floor(Math.random() * COLORS.length);
+      return { shape: PIECES[i], ci, x: Math.floor(COLS/2) - Math.floor(PIECES[i][0].length/2), y: 0 };
+    }
+
+    function reset() {
+      board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+      score = 0; lines = 0; level = 1; running = false;
+      scoreEl.textContent = 0; linesEl.textContent = 0; levelEl.textContent = 1;
+      piece = randPiece(); next = randPiece();
+      msgEl.textContent = 'Press any key to start';
+      draw();
+    }
+
+    function valid(p, dx=0, dy=0, shape=p.shape) {
+      return shape.every((row, r) => row.every((v, c) => {
+        if (!v) return true;
+        const nx = p.x+c+dx, ny = p.y+r+dy;
+        return nx>=0 && nx<COLS && ny<ROWS && !board[ny]?.[nx];
+      }));
+    }
+
+    function rotate(shape) {
+      return shape[0].map((_, c) => shape.map(r => r[c]).reverse());
+    }
+
+    function lock() {
+      piece.shape.forEach((row, r) => row.forEach((v, c) => {
+        if (v) board[piece.y+r][piece.x+c] = piece.ci+1;
+      }));
+      let cleared = 0;
+      for (let r = ROWS-1; r >= 0; r--) {
+        if (board[r].every(v => v)) { board.splice(r,1); board.unshift(Array(COLS).fill(0)); cleared++; r++; }
+      }
+      if (cleared) {
+        const pts = [0,100,300,500,800][cleared] * level;
+        score += pts; lines += cleared;
+        level = Math.floor(lines/10)+1;
+        scoreEl.textContent = score; linesEl.textContent = lines; levelEl.textContent = level;
+      }
+      piece = next; next = randPiece();
+      if (!valid(piece)) { running = false; clearInterval(loop); msgEl.textContent = `Game over! Score: ${score}`; }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#0f0f17'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.strokeStyle = '#16161f'; ctx.lineWidth = 0.5;
+      for (let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(COLS*CELL,r*CELL);ctx.stroke();}
+      for (let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,ROWS*CELL);ctx.stroke();}
+      board.forEach((row,r) => row.forEach((v,c) => {
+        if (v) { ctx.fillStyle=COLORS[v-1]; ctx.beginPath(); ctx.roundRect(c*CELL+1,r*CELL+1,CELL-2,CELL-2,2); ctx.fill(); }
+      }));
+      if (piece) {
+        ctx.fillStyle = COLORS[piece.ci];
+        piece.shape.forEach((row,r) => row.forEach((v,c) => {
+          if (v) { ctx.beginPath(); ctx.roundRect((piece.x+c)*CELL+1,(piece.y+r)*CELL+1,CELL-2,CELL-2,2); ctx.fill(); }
+        }));
+      }
+      nctx.fillStyle = '#0f0f17'; nctx.fillRect(0,0,80,80);
+      if (next) {
+        nctx.fillStyle = COLORS[next.ci];
+        const ox = Math.floor((4-next.shape[0].length)/2)*CELL;
+        const oy = Math.floor((4-next.shape.length)/2)*CELL;
+        next.shape.forEach((row,r) => row.forEach((v,c) => {
+          if (v) { nctx.beginPath(); nctx.roundRect(ox+c*CELL+1,oy+r*CELL+1,CELL-2,CELL-2,2); nctx.fill(); }
+        }));
+      }
+    }
+
+    function drop() {
+      if (valid(piece,0,1)) { piece.y++; } else { lock(); }
+      draw();
+    }
+
+    function start() {
+      if (running) return;
+      running = true; msgEl.textContent = '';
+      loop = setInterval(() => { drop(); }, Math.max(100, 800 - (level-1)*70));
+    }
+
+    function onKey(e) {
+      if (overlay.classList.contains('hidden') || !running) { if (!running && !overlay.classList.contains('hidden')) start(); return; }
+      if (e.key==='ArrowLeft'  && valid(piece,-1,0)) { piece.x--; draw(); }
+      if (e.key==='ArrowRight' && valid(piece,1,0))  { piece.x++; draw(); }
+      if (e.key==='ArrowDown')  { drop(); }
+      if (e.key==='ArrowUp') {
+        const r = rotate(piece.shape);
+        if (valid(piece,0,0,r)) { piece.shape=r; draw(); }
+      }
+      if (e.key===' ') { while(valid(piece,0,1)) piece.y++; lock(); draw(); }
+      e.preventDefault();
+    }
+
+    function close() {
+      overlay.classList.add('hidden'); clearInterval(loop); running=false;
+      document.removeEventListener('keydown', onKey);
+    }
+
+    document.addEventListener('keydown', onKey);
+    closeBtn.onclick = close;
+    overlay.addEventListener('click', e => { if(e.target===overlay) close(); });
+    overlay.classList.remove('hidden');
+    reset();
+  })();
+}
+
+/* ── PONG ── */
+function startPong() {
+  (function() {
+    const W=480, H=280, PAD_H=60, PAD_W=10, BALL_R=7, PAD_SPEED=5;
+    const overlay  = document.getElementById('pongOverlay');
+    const closeBtn = document.getElementById('pongClose');
+    const canvas   = document.getElementById('pongCanvas');
+    const scoreL   = document.getElementById('pongScoreL');
+    const scoreR   = document.getElementById('pongScoreR');
+    const msgEl    = document.getElementById('pongMsg');
+    const ctx      = canvas.getContext('2d');
+
+    let lY, rY, bx, by, vx, vy, sl, sr, running, raf;
+    const keys = {};
+
+    function reset(serve=0) {
+      lY = rY = H/2 - PAD_H/2;
+      bx = W/2; by = H/2;
+      const angle = (Math.random()*0.6-0.3);
+      const dir = serve===0 ? (Math.random()<0.5?1:-1) : (serve>0?1:-1);
+      vx = dir * 4; vy = Math.sin(angle)*4;
+    }
+
+    function init() {
+      sl=0; sr=0; scoreL.textContent=0; scoreR.textContent=0;
+      reset(); running=false; msgEl.textContent='Press Space to start';
+      draw();
+    }
+
+    function draw() {
+      ctx.fillStyle='#0f0f17'; ctx.fillRect(0,0,W,H);
+      ctx.setLineDash([6,6]); ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='rgba(255,255,255,0.9)';
+      ctx.beginPath(); ctx.roundRect(10, lY, PAD_W, PAD_H, 3); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(W-20, rY, PAD_W, PAD_H, 3); ctx.fill();
+      ctx.fillStyle='#e50914';
+      ctx.beginPath(); ctx.arc(bx,by,BALL_R,0,Math.PI*2); ctx.fill();
+    }
+
+    function update() {
+      if (keys['w']||keys['W']) lY = Math.max(0, lY-PAD_SPEED);
+      if (keys['s']||keys['S']) lY = Math.min(H-PAD_H, lY+PAD_SPEED);
+      if (keys['ArrowUp'])   rY = Math.max(0, rY-PAD_SPEED);
+      if (keys['ArrowDown']) rY = Math.min(H-PAD_H, rY+PAD_SPEED);
+      bx+=vx; by+=vy;
+      if (by-BALL_R<=0||by+BALL_R>=H) vy=-vy;
+      if (bx-BALL_R<=20+PAD_W && by>=lY && by<=lY+PAD_H) { vx=Math.abs(vx)*1.05; vy+=((by-(lY+PAD_H/2))/(PAD_H/2))*2; }
+      if (bx+BALL_R>=W-20 && by>=rY && by<=rY+PAD_H) { vx=-Math.abs(vx)*1.05; vy+=((by-(rY+PAD_H/2))/(PAD_H/2))*2; }
+      const maxV=12; const spd=Math.hypot(vx,vy); if(spd>maxV){vx=vx/spd*maxV;vy=vy/spd*maxV;}
+      if (bx<0) { sr++; scoreR.textContent=sr; reset(1); if(sr>=7){running=false;cancelAnimationFrame(raf);msgEl.textContent='Right wins! Space to restart';} }
+      if (bx>W) { sl++; scoreL.textContent=sl; reset(-1); if(sl>=7){running=false;cancelAnimationFrame(raf);msgEl.textContent='Left wins! Space to restart';} }
+    }
+
+    function loop() { if(!running) return; update(); draw(); raf=requestAnimationFrame(loop); }
+
+    function onKey(e) {
+      if (overlay.classList.contains('hidden')) return;
+      keys[e.key]=true;
+      if (e.key===' ') { e.preventDefault(); if(!running){init();running=true;msgEl.textContent='';loop();} }
+      if (['ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault();
+    }
+    function onKeyUp(e) { keys[e.key]=false; }
+
+    function close() {
+      overlay.classList.add('hidden'); running=false; cancelAnimationFrame(raf);
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('keyup', onKeyUp);
+    }
+
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('keyup', onKeyUp);
+    closeBtn.onclick = close;
+    overlay.addEventListener('click', e => { if(e.target===overlay) close(); });
+    overlay.classList.remove('hidden');
+    init();
+  })();
+}
+
+/* ── BREAKOUT ── */
+function startBreakout() {
+  (function() {
+    const W=400, H=300, PAD_W=70, PAD_H=10, BALL_R=7, ROWS=5, COLS=10;
+    const BRICK_W=W/COLS, BRICK_H=18, BRICK_PAD=2;
+    const COLORS=['#e50914','#ff6b35','#f5c518','#4ade80','#60a5fa'];
+
+    const overlay  = document.getElementById('breakoutOverlay');
+    const closeBtn = document.getElementById('breakoutClose');
+    const canvas   = document.getElementById('breakoutCanvas');
+    const scoreEl  = document.getElementById('breakoutScore');
+    const livesEl  = document.getElementById('breakoutLives');
+    const msgEl    = document.getElementById('breakoutMsg');
+    const ctx      = canvas.getContext('2d');
+
+    let px, bx, by, vx, vy, bricks, score, lives, running, launched, raf;
+    const keys={};
+
+    function makeBricks() {
+      return Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,c)=>({alive:true,r,c})));
+    }
+
+    function init() {
+      px=W/2-PAD_W/2; bx=W/2; by=H-30; vx=3; vy=-3;
+      bricks=makeBricks(); score=0; lives=3; running=false; launched=false;
+      scoreEl.textContent=0; livesEl.textContent=3;
+      msgEl.textContent='Press Space to launch';
+      draw();
+    }
+
+    function draw() {
+      ctx.fillStyle='#0f0f17'; ctx.fillRect(0,0,W,H);
+      bricks.forEach(row=>row.forEach(b=>{
+        if(!b.alive) return;
+        ctx.fillStyle=COLORS[b.r];
+        ctx.beginPath(); ctx.roundRect(b.c*BRICK_W+BRICK_PAD, b.r*BRICK_H+BRICK_PAD+30, BRICK_W-BRICK_PAD*2, BRICK_H-BRICK_PAD*2, 2); ctx.fill();
+      }));
+      ctx.fillStyle='rgba(255,255,255,0.9)';
+      ctx.beginPath(); ctx.roundRect(px,H-PAD_H-5,PAD_W,PAD_H,4); ctx.fill();
+      ctx.fillStyle='#e50914';
+      ctx.beginPath(); ctx.arc(bx,by,BALL_R,0,Math.PI*2); ctx.fill();
+    }
+
+    function update() {
+      const spd=5;
+      if (keys['ArrowLeft']||keys['a']||keys['A']) px=Math.max(0,px-spd);
+      if (keys['ArrowRight']||keys['d']||keys['D']) px=Math.min(W-PAD_W,px+spd);
+      if (!launched) { bx=px+PAD_W/2; return; }
+      bx+=vx; by+=vy;
+      if (bx-BALL_R<=0||bx+BALL_R>=W) vx=-vx;
+      if (by-BALL_R<=0) vy=-vy;
+      if (by+BALL_R>=H-PAD_H-5 && bx>=px && bx<=px+PAD_W) {
+        vy=-Math.abs(vy); vx+=((bx-(px+PAD_W/2))/(PAD_W/2))*2;
+      }
+      if (by>H) {
+        lives--; livesEl.textContent=lives;
+        if(lives<=0){running=false;cancelAnimationFrame(raf);msgEl.textContent=`Game over! Score: ${score}`; return;}
+        launched=false; bx=px+PAD_W/2; by=H-30; vx=3; vy=-3;
+        msgEl.textContent='Press Space to launch';
+      }
+      bricks.forEach(row=>row.forEach(b=>{
+        if(!b.alive) return;
+        const bLeft=b.c*BRICK_W+BRICK_PAD, bTop=b.r*BRICK_H+BRICK_PAD+30;
+        const bRight=bLeft+BRICK_W-BRICK_PAD*2, bBottom=bTop+BRICK_H-BRICK_PAD*2;
+        if(bx+BALL_R>bLeft&&bx-BALL_R<bRight&&by+BALL_R>bTop&&by-BALL_R<bBottom){
+          b.alive=false; vy=-vy; score+=10*(b.r+1); scoreEl.textContent=score;
+        }
+      }));
+      if(bricks.every(row=>row.every(b=>!b.alive))){running=false;cancelAnimationFrame(raf);msgEl.textContent=`You win! Score: ${score}`;}
+    }
+
+    function loop(){if(!running)return;update();draw();raf=requestAnimationFrame(loop);}
+
+    function onKey(e){
+      if(overlay.classList.contains('hidden'))return;
+      keys[e.key]=true;
+      if(e.key===' '){e.preventDefault();if(!launched&&running){launched=true;msgEl.textContent='';}else if(!running){init();running=true;loop();}}
+      if(['ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();
+    }
+    function onKeyUp(e){keys[e.key]=false;}
+
+    function close(){
+      overlay.classList.add('hidden');running=false;cancelAnimationFrame(raf);
+      document.removeEventListener('keydown',onKey);
+      document.removeEventListener('keyup',onKeyUp);
+    }
+
+    document.addEventListener('keydown',onKey);
+    document.addEventListener('keyup',onKeyUp);
+    closeBtn.onclick=close;
+    overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+    overlay.classList.remove('hidden');
+    init(); running=true; loop();
+  })();
+}
+
+/* ── MOVIE TRIVIA ── */
+function startTrivia() {
+  (function() {
+    const overlay  = document.getElementById('triviaOverlay');
+    const closeBtn = document.getElementById('triviaClose');
+    const posterEl = document.getElementById('triviaPoster');
+    const questionEl = document.getElementById('triviaQuestion');
+    const optionsEl  = document.getElementById('triviaOptions');
+    const scoreEl    = document.getElementById('triviaScore');
+    const qEl        = document.getElementById('triviaQ');
+    const msgEl      = document.getElementById('triviaMsg');
+
+    let score=0, qNum=0, total=10, pool=[], answered=false;
+
+    function shuffle(a){return a.sort(()=>Math.random()-0.5);}
+
+    async function loadPool() {
+      questionEl.textContent='Loading questions...';
+      optionsEl.innerHTML='';
+      try {
+        const pages = await Promise.all([1,2,3].map(p=>tmdbFetch(`/movie/popular?page=${p}`)));
+        pool = pages.flatMap(p=>p.results||[]).filter(m=>m.poster_path&&m.release_date&&m.vote_average>0&&m.genre_ids?.length);
+        shuffle(pool);
+        nextQuestion();
+      } catch(_){ questionEl.textContent='Failed to load. Check connection.'; }
+    }
+
+    function makeQuestion(movie, allMovies) {
+      const type = Math.floor(Math.random()*3);
+      if (type===0) {
+        const year = movie.release_date.slice(0,4);
+        const wrongs = shuffle(allMovies.filter(m=>m.id!==movie.id&&m.release_date).map(m=>m.release_date.slice(0,4))).slice(0,3);
+        return { q:`What year was "${movie.title}" released?`, correct: year, opts: shuffle([year,...wrongs]) };
+      } else if (type===1) {
+        const score = movie.vote_average.toFixed(1);
+        const wrongs = ['5.0','6.0','6.5','7.0','7.5','8.0','8.5','9.0'].filter(s=>s!==score).slice(0,3);
+        return { q:`What is the TMDB rating of "${movie.title}"?`, correct: score, opts: shuffle([score,...wrongs]) };
+      } else {
+        const GENRE_NAMES = {28:'Action',12:'Adventure',16:'Animation',35:'Comedy',80:'Crime',99:'Documentary',18:'Drama',10751:'Family',14:'Fantasy',27:'Horror',9648:'Mystery',10749:'Romance',878:'Sci-Fi',53:'Thriller',10752:'War',37:'Western',10759:'Action & Adventure',10765:'Sci-Fi & Fantasy',10768:'War & Politics'};
+        const gid = movie.genre_ids[0];
+        const correct = GENRE_NAMES[gid]||'Drama';
+        const wrongs = shuffle(Object.values(GENRE_NAMES).filter(g=>g!==correct)).slice(0,3);
+        return { q:`What genre is "${movie.title}"?`, correct, opts: shuffle([correct,...wrongs]) };
+      }
+    }
+
+    function nextQuestion() {
+      if (qNum>=total) { endGame(); return; }
+      answered=false;
+      const movie = pool[qNum];
+      const q = makeQuestion(movie, pool);
+      qNum++;
+      qEl.textContent=`${qNum}/${total}`;
+      posterEl.style.backgroundImage = movie.poster_path ? `url('https://image.tmdb.org/t/p/w500${movie.poster_path}')` : 'none';
+      questionEl.textContent = q.q;
+      msgEl.textContent='';
+      optionsEl.innerHTML='';
+      q.opts.forEach(opt=>{
+        const btn=document.createElement('button');
+        btn.className='trivia-opt';
+        btn.textContent=opt;
+        btn.addEventListener('click',()=>{
+          if(answered)return;
+          answered=true;
+          if(opt===q.correct){
+            btn.classList.add('correct'); score++; scoreEl.textContent=score;
+            msgEl.textContent='Correct!';
+          } else {
+            btn.classList.add('wrong');
+            optionsEl.querySelectorAll('.trivia-opt').forEach(b=>{ if(b.textContent===q.correct) b.classList.add('correct'); });
+            msgEl.textContent=`Wrong! It was "${q.correct}"`;
+          }
+          optionsEl.querySelectorAll('.trivia-opt').forEach(b=>b.disabled=true);
+          setTimeout(nextQuestion, 1500);
+        });
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function endGame() {
+      posterEl.style.backgroundImage='none';
+      questionEl.textContent=`Game over! You scored ${score}/${total}`;
+      optionsEl.innerHTML='';
+      const restart=document.createElement('button');
+      restart.className='trivia-opt'; restart.textContent='Play Again';
+      restart.style.gridColumn='1/-1';
+      restart.addEventListener('click',()=>{ score=0; qNum=0; scoreEl.textContent=0; shuffle(pool); nextQuestion(); });
+      optionsEl.appendChild(restart);
+    }
+
+    function close(){ overlay.classList.add('hidden'); }
+    closeBtn.onclick=close;
+    overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+    overlay.classList.remove('hidden');
+    score=0; qNum=0; scoreEl.textContent=0; qEl.textContent=`0/${total}`;
+    loadPool();
+  })();
 }

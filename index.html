@@ -802,12 +802,171 @@
   </nav>
 
   
-  <div class="server-panel hidden" id="serverPanel">
-    <h3>Available Servers</h3>
-    <div class="server-grid" id="serverGrid"></div>
-  </div>
-  <div class="server-backdrop hidden" id="serverBackdrop"></div>
+  <button class="snake-trigger" id="gameTrigger" title="Games">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="6" width="20" height="12" rx="3"/>
+      <circle cx="8" cy="12" r="1.2" fill="currentColor"/>
+      <circle cx="5" cy="12" r="1.2" fill="currentColor"/>
+      <circle cx="19" cy="10" r="1.2" fill="currentColor"/>
+      <circle cx="19" cy="14" r="1.2" fill="currentColor"/>
+      <line x1="12" y1="9" x2="12" y2="15"/>
+      <line x1="9" y1="12" x2="15" y2="12"/>
+    </svg>
+  </button>
 
+  <!-- GAMES HUB -->
+  <div class="snake-overlay hidden" id="gamesHub">
+    <div class="games-hub-modal">
+      <button class="snake-close" id="gamesHubClose">&times;</button>
+      <h2 class="games-hub-title">Games</h2>
+      <div class="games-hub-grid">
+        <button class="games-hub-card" id="openSnake">
+          <div class="games-hub-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 0 20"/><path d="M12 2a10 10 0 0 0 0 20"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <div class="games-hub-name">Snake</div>
+        </button>
+        <button class="games-hub-card" id="openMines">
+          <div class="games-hub-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="19.07" y2="19.07"/></svg></div>
+          <div class="games-hub-name">Minesweeper</div>
+        </button>
+        <button class="games-hub-card" id="openTetris">
+          <div class="games-hub-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+          <div class="games-hub-name">Tetris</div>
+        </button>
+        <button class="games-hub-card" id="openPong">
+          <div class="games-hub-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="3" height="8" rx="1"/><rect x="19" y="8" width="3" height="8" rx="1"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 3"/></svg></div>
+          <div class="games-hub-name">Pong</div>
+        </button>
+        <button class="games-hub-card" id="openBreakout">
+          <div class="games-hub-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="4" rx="1"/><rect x="7" y="10" width="10" height="3" rx="1"/><circle cx="12" cy="18" r="2"/><rect x="8" y="21" width="8" height="2" rx="1"/></svg></div>
+          <div class="games-hub-name">Breakout</div>
+        </button>
+        <button class="games-hub-card" id="openTrivia">
+          <div class="games-hub-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+          <div class="games-hub-name">Movie Trivia</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SNAKE -->
+  <div class="snake-overlay hidden" id="snakeOverlay">
+    <div class="snake-modal">
+      <button class="snake-close" id="snakeClose">&times;</button>
+      <div class="snake-score-wrap">
+        <span class="snake-label">SCORE</span>
+        <span class="snake-score" id="snakeScore">0</span>
+        <span class="snake-label">BEST</span>
+        <span class="snake-score" id="snakeBest">0</span>
+      </div>
+      <div class="mines-diff" id="snakeSpeeds">
+        <button class="mines-diff-btn active" data-speed="slow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3a6 6 0 0 1 6 6c0 3-2 5-2 8h-8c0-3-2-5-2-8a6 6 0 0 1 6-6z"/><path d="M8 21h-4"/><path d="M6 21v-3"/></svg>
+          Slow
+        </button>
+        <button class="mines-diff-btn" data-speed="normal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          Medium
+        </button>
+        <button class="mines-diff-btn" data-speed="fast">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Fast
+        </button>
+      </div>
+      <canvas id="snakeCanvas" width="320" height="320"></canvas>
+      <div class="snake-msg" id="snakeMsg">Press any arrow key to start</div>
+    </div>
+  </div>
+
+  <!-- MINESWEEPER -->
+  <div class="snake-overlay hidden" id="minesOverlay">
+    <div class="mines-modal">
+      <button class="snake-close" id="minesClose">&times;</button>
+      <div class="mines-header">
+        <div class="snake-score-wrap">
+          <span class="snake-label">💣</span>
+          <span class="snake-score" id="minesLeft">0</span>
+          <span class="snake-label">⏱</span>
+          <span class="snake-score" id="minesTime">0</span>
+        </div>
+        <div class="mines-diff">
+          <button class="mines-diff-btn active" data-diff="easy">Easy</button>
+          <button class="mines-diff-btn" data-diff="medium">Medium</button>
+          <button class="mines-diff-btn" data-diff="hard">Hard</button>
+        </div>
+      </div>
+      <div id="minesGrid" class="mines-grid"></div>
+      <div class="snake-msg" id="minesMsg">Click to reveal · Right-click to flag</div>
+    </div>
+  </div>
+
+  <!-- TETRIS -->
+  <div class="snake-overlay hidden" id="tetrisOverlay">
+    <div class="snake-modal">
+      <button class="snake-close" id="tetrisClose">&times;</button>
+      <div class="snake-score-wrap">
+        <span class="snake-label">SCORE</span>
+        <span class="snake-score" id="tetrisScore">0</span>
+        <span class="snake-label">LINES</span>
+        <span class="snake-score" id="tetrisLines">0</span>
+        <span class="snake-label">LEVEL</span>
+        <span class="snake-score" id="tetrisLevel">1</span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <canvas id="tetrisCanvas" width="200" height="400"></canvas>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="snake-label" style="font-size:0.65rem">NEXT</div>
+          <canvas id="tetrisNext" width="80" height="80"></canvas>
+        </div>
+      </div>
+      <div class="snake-msg" id="tetrisMsg">Press any key to start</div>
+    </div>
+  </div>
+
+  <!-- PONG -->
+  <div class="snake-overlay hidden" id="pongOverlay">
+    <div class="snake-modal">
+      <button class="snake-close" id="pongClose">&times;</button>
+      <div class="snake-score-wrap">
+        <span class="snake-score" id="pongScoreL">0</span>
+        <span class="snake-label" style="font-size:0.65rem">W/S &nbsp;·&nbsp; ↑/↓</span>
+        <span class="snake-score" id="pongScoreR">0</span>
+      </div>
+      <canvas id="pongCanvas" width="480" height="280"></canvas>
+      <div class="snake-msg" id="pongMsg">Press Space to start</div>
+    </div>
+  </div>
+
+  <!-- BREAKOUT -->
+  <div class="snake-overlay hidden" id="breakoutOverlay">
+    <div class="snake-modal">
+      <button class="snake-close" id="breakoutClose">&times;</button>
+      <div class="snake-score-wrap">
+        <span class="snake-label">SCORE</span>
+        <span class="snake-score" id="breakoutScore">0</span>
+        <span class="snake-label">LIVES</span>
+        <span class="snake-score" id="breakoutLives">3</span>
+      </div>
+      <canvas id="breakoutCanvas" width="400" height="300"></canvas>
+      <div class="snake-msg" id="breakoutMsg">Press Space to launch</div>
+    </div>
+  </div>
+
+  <!-- MOVIE TRIVIA -->
+  <div class="snake-overlay hidden" id="triviaOverlay">
+    <div class="trivia-modal">
+      <button class="snake-close" id="triviaClose">&times;</button>
+      <div class="snake-score-wrap">
+        <span class="snake-label">SCORE</span>
+        <span class="snake-score" id="triviaScore">0</span>
+        <span class="snake-label">Q</span>
+        <span class="snake-score" id="triviaQ">0/10</span>
+      </div>
+      <div id="triviaPoster" class="trivia-poster"></div>
+      <div id="triviaQuestion" class="trivia-question">Loading...</div>
+      <div id="triviaOptions" class="trivia-options"></div>
+      <div class="snake-msg" id="triviaMsg"></div>
+    </div>
+  </div>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
